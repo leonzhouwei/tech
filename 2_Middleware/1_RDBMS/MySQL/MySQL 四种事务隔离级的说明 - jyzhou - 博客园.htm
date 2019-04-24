@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<!-- saved from url=(0047)http://www.cnblogs.com/zhoujinyi/p/3437475.html -->
+<html lang="zh-cn" class="cye-disabled cye-lm"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="origin">
+    <title>MySQL 四种事务隔离级的说明 - jyzhou - 博客园</title>
+<meta property="og:description" content="很早之前写的文章，重新回顾和学习下，也可以看这篇文章说明。 按照SQL:1992 事务隔离级别，InnoDB默认是可重复读的（REPEATABLE READ）。MySQL/InnoDB 提供SQL标准">
+    <link type="text/css" rel="stylesheet" href="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/blog-common.css">
+<link id="MainCss" type="text/css" rel="stylesheet" href="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/bundle-ThinkInside.css">
+<link id="mobile-style" media="only screen and (max-width: 767px)" type="text/css" rel="stylesheet" href="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/bundle-ThinkInside-mobile.css">
+    <link title="RSS" type="application/rss+xml" rel="alternate" href="https://www.cnblogs.com/zhoujinyi/rss">
+    <link title="RSD" type="application/rsd+xml" rel="EditURI" href="https://www.cnblogs.com/zhoujinyi/rsd.xml">
+<link type="application/wlwmanifest+xml" rel="wlwmanifest" href="https://www.cnblogs.com/zhoujinyi/wlwmanifest.xml">
+    <script src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/f.txt"></script><script src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/pubads_impl_rendering_2019041601.js"></script><script async="" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/analytics.js"></script><script type="text/javascript" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/encoder.js"></script><script src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/jquery-2.2.0.min.js"></script><style id="nightModeStyle">
+html.cye-enabled.cye-nm:not(*:-webkit-full-screen) body,
+ html.cye-enabled.cye-nm:not(*:-webkit-full-screen) #cye-workaround-body {-webkit-filter:contrast(91%) brightness(84%) invert(1);}</style><style id="cyebody">html.cye-enabled.cye-lm body{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyediv">html.cye-enabled.cye-lm div{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyetable">html.cye-enabled.cye-lm th{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}html.cye-enabled.cye-lm td{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyetextInput">html.cye-enabled.cye-lm input[type=text]{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}html.cye-enabled.cye-lm textarea{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyeselect">html.cye-enabled.cye-lm select{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyeul">html.cye-enabled.cye-lm ul{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyeChangeByClick">html.cye-enabled.cye-lm .cye-lm-tag,html.cye-enabled.cye-lm.cye-lm-tag{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style>
+    <script>var currentBlogId=128350;var currentBlogApp='zhoujinyi',cb_enable_mathjax=true;var isLogined=true;</script>
+    <script type="text/x-mathjax-config;executed=true">
+    MathJax.Hub.Config({
+        tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']], processClass: 'math', processEscapes: true },
+        TeX: { 
+            equationNumbers: { autoNumber: ['AMS'], useLabelIds: true }, 
+            extensions: ['extpfeil.js'],
+            Macros: {bm: "\\boldsymbol"}
+        },
+        'HTML-CSS': { linebreaks: { automatic: true } },
+        SVG: { linebreaks: { automatic: true } }
+        });
+    </script><script src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/MathJax.js"></script>
+<script src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/blog-common.js" type="text/javascript"></script>
+<link rel="preload" href="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/f(1).txt" as="script"><script type="text/javascript" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/f(1).txt"></script><script src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/pubads_impl_2019041601.js" async=""></script><style type="text/css">.MathJax_Hover_Frame {border-radius: .25em; -webkit-border-radius: .25em; -moz-border-radius: .25em; -khtml-border-radius: .25em; box-shadow: 0px 0px 15px #83A; -webkit-box-shadow: 0px 0px 15px #83A; -moz-box-shadow: 0px 0px 15px #83A; -khtml-box-shadow: 0px 0px 15px #83A; border: 1px solid #A6D ! important; display: inline-block; position: absolute}
+.MathJax_Menu_Button .MathJax_Hover_Arrow {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; -khtml-border-radius: 4px; font-family: 'Courier New',Courier; font-size: 9px; color: #F0F0F0}
+.MathJax_Menu_Button .MathJax_Hover_Arrow span {display: block; background-color: #AAA; border: 1px solid; border-radius: 3px; line-height: 0; padding: 4px}
+.MathJax_Hover_Arrow:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_Hover_Arrow:hover span {background-color: #CCC!important}
+</style><style type="text/css">#MathJax_About {position: fixed; left: 50%; width: auto; text-align: center; border: 3px outset; padding: 1em 2em; background-color: #DDDDDD; color: black; cursor: default; font-family: message-box; font-size: 120%; font-style: normal; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; border-radius: 15px; -webkit-border-radius: 15px; -moz-border-radius: 15px; -khtml-border-radius: 15px; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_About.MathJax_MousePost {outline: none}
+.MathJax_Menu {position: absolute; background-color: white; color: black; width: auto; padding: 5px 0px; border: 1px solid #CCCCCC; margin: 0; cursor: default; font: menu; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; border-radius: 5px; -webkit-border-radius: 5px; -moz-border-radius: 5px; -khtml-border-radius: 5px; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+.MathJax_MenuItem {padding: 1px 2em; background: transparent}
+.MathJax_MenuArrow {position: absolute; right: .5em; padding-top: .25em; color: #666666; font-size: .75em}
+.MathJax_MenuActive .MathJax_MenuArrow {color: white}
+.MathJax_MenuArrow.RTL {left: .5em; right: auto}
+.MathJax_MenuCheck {position: absolute; left: .7em}
+.MathJax_MenuCheck.RTL {right: .7em; left: auto}
+.MathJax_MenuRadioCheck {position: absolute; left: .7em}
+.MathJax_MenuRadioCheck.RTL {right: .7em; left: auto}
+.MathJax_MenuLabel {padding: 1px 2em 3px 1.33em; font-style: italic}
+.MathJax_MenuRule {border-top: 1px solid #DDDDDD; margin: 4px 3px}
+.MathJax_MenuDisabled {color: GrayText}
+.MathJax_MenuActive {background-color: #606872; color: white}
+.MathJax_MenuDisabled:focus, .MathJax_MenuLabel:focus {background-color: #E8E8E8}
+.MathJax_ContextMenu:focus {outline: none}
+.MathJax_ContextMenu .MathJax_MenuItem:focus {outline: none}
+#MathJax_AboutClose {top: .2em; right: .2em}
+.MathJax_Menu .MathJax_MenuClose {top: -10px; left: -10px}
+.MathJax_MenuClose {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; font-family: 'Courier New',Courier; font-size: 24px; color: #F0F0F0}
+.MathJax_MenuClose span {display: block; background-color: #AAA; border: 1.5px solid; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; line-height: 0; padding: 8px 0 6px}
+.MathJax_MenuClose:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_MenuClose:hover span {background-color: #CCC!important}
+.MathJax_MenuClose:hover:focus {outline: none}
+</style><style type="text/css">.MathJax_Preview .MJXf-math {color: inherit!important}
+</style><style type="text/css">.MJX_Assistive_MathML {position: absolute!important; top: 0; left: 0; clip: rect(1px, 1px, 1px, 1px); padding: 1px 0 0 0!important; border: 0!important; height: 1px!important; width: 1px!important; overflow: hidden!important; display: block!important; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none}
+.MJX_Assistive_MathML.MJX_Assistive_MathML_Block {width: 100%!important}
+</style><style type="text/css">#MathJax_Zoom {position: absolute; background-color: #F0F0F0; overflow: auto; display: block; z-index: 301; padding: .5em; border: 1px solid black; margin: 0; font-weight: normal; font-style: normal; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; -webkit-box-sizing: content-box; -moz-box-sizing: content-box; box-sizing: content-box; box-shadow: 5px 5px 15px #AAAAAA; -webkit-box-shadow: 5px 5px 15px #AAAAAA; -moz-box-shadow: 5px 5px 15px #AAAAAA; -khtml-box-shadow: 5px 5px 15px #AAAAAA; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_ZoomOverlay {position: absolute; left: 0; top: 0; z-index: 300; display: inline-block; width: 100%; height: 100%; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+#MathJax_ZoomFrame {position: relative; display: inline-block; height: 0; width: 0}
+#MathJax_ZoomEventTrap {position: absolute; left: 0; top: 0; z-index: 302; display: inline-block; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+</style><style type="text/css">.MathJax_Preview {color: #888}
+#MathJax_Message {position: fixed; left: 1em; bottom: 1.5em; background-color: #E6E6E6; border: 1px solid #959595; margin: 0px; padding: 2px 8px; z-index: 102; color: black; font-size: 80%; width: auto; white-space: nowrap}
+#MathJax_MSIE_Frame {position: absolute; top: 0; left: 0; width: 0px; z-index: 101; border: 0px; margin: 0px; padding: 0px}
+.MathJax_Error {color: #CC0000; font-style: italic}
+</style><link rel="prefetch" href="http://tpc.googlesyndication.com/safeframe/1-0-32/html/container.html?v=1-0-33"><style type="text/css">.MJXp-script {font-size: .8em}
+.MJXp-right {-webkit-transform-origin: right; -moz-transform-origin: right; -ms-transform-origin: right; -o-transform-origin: right; transform-origin: right}
+.MJXp-bold {font-weight: bold}
+.MJXp-italic {font-style: italic}
+.MJXp-scr {font-family: MathJax_Script,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-frak {font-family: MathJax_Fraktur,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-sf {font-family: MathJax_SansSerif,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-cal {font-family: MathJax_Caligraphic,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-mono {font-family: MathJax_Typewriter,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-largeop {font-size: 150%}
+.MJXp-largeop.MJXp-int {vertical-align: -.2em}
+.MJXp-math {display: inline-block; line-height: 1.2; text-indent: 0; font-family: 'Times New Roman',Times,STIXGeneral,serif; white-space: nowrap; border-collapse: collapse}
+.MJXp-display {display: block; text-align: center; margin: 1em 0}
+.MJXp-math span {display: inline-block}
+.MJXp-box {display: block!important; text-align: center}
+.MJXp-box:after {content: " "}
+.MJXp-rule {display: block!important; margin-top: .1em}
+.MJXp-char {display: block!important}
+.MJXp-mo {margin: 0 .15em}
+.MJXp-mfrac {margin: 0 .125em; vertical-align: .25em}
+.MJXp-denom {display: inline-table!important; width: 100%}
+.MJXp-denom > * {display: table-row!important}
+.MJXp-surd {vertical-align: top}
+.MJXp-surd > * {display: block!important}
+.MJXp-script-box > *  {display: table!important; height: 50%}
+.MJXp-script-box > * > * {display: table-cell!important; vertical-align: top}
+.MJXp-script-box > *:last-child > * {vertical-align: bottom}
+.MJXp-script-box > * > * > * {display: block!important}
+.MJXp-mphantom {visibility: hidden}
+.MJXp-munderover {display: inline-table!important}
+.MJXp-over {display: inline-block!important; text-align: center}
+.MJXp-over > * {display: block!important}
+.MJXp-munderover > * {display: table-row!important}
+.MJXp-mtable {vertical-align: .25em; margin: 0 .125em}
+.MJXp-mtable > * {display: inline-table!important; vertical-align: middle}
+.MJXp-mtr {display: table-row!important}
+.MJXp-mtd {display: table-cell!important; text-align: center; padding: .5em 0 0 .5em}
+.MJXp-mtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-mlabeledtr {display: table-row!important}
+.MJXp-mlabeledtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mlabeledtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 1px 3px; font-style: normal; font-size: 90%}
+.MJXp-scale0 {-webkit-transform: scaleX(.0); -moz-transform: scaleX(.0); -ms-transform: scaleX(.0); -o-transform: scaleX(.0); transform: scaleX(.0)}
+.MJXp-scale1 {-webkit-transform: scaleX(.1); -moz-transform: scaleX(.1); -ms-transform: scaleX(.1); -o-transform: scaleX(.1); transform: scaleX(.1)}
+.MJXp-scale2 {-webkit-transform: scaleX(.2); -moz-transform: scaleX(.2); -ms-transform: scaleX(.2); -o-transform: scaleX(.2); transform: scaleX(.2)}
+.MJXp-scale3 {-webkit-transform: scaleX(.3); -moz-transform: scaleX(.3); -ms-transform: scaleX(.3); -o-transform: scaleX(.3); transform: scaleX(.3)}
+.MJXp-scale4 {-webkit-transform: scaleX(.4); -moz-transform: scaleX(.4); -ms-transform: scaleX(.4); -o-transform: scaleX(.4); transform: scaleX(.4)}
+.MJXp-scale5 {-webkit-transform: scaleX(.5); -moz-transform: scaleX(.5); -ms-transform: scaleX(.5); -o-transform: scaleX(.5); transform: scaleX(.5)}
+.MJXp-scale6 {-webkit-transform: scaleX(.6); -moz-transform: scaleX(.6); -ms-transform: scaleX(.6); -o-transform: scaleX(.6); transform: scaleX(.6)}
+.MJXp-scale7 {-webkit-transform: scaleX(.7); -moz-transform: scaleX(.7); -ms-transform: scaleX(.7); -o-transform: scaleX(.7); transform: scaleX(.7)}
+.MJXp-scale8 {-webkit-transform: scaleX(.8); -moz-transform: scaleX(.8); -ms-transform: scaleX(.8); -o-transform: scaleX(.8); transform: scaleX(.8)}
+.MJXp-scale9 {-webkit-transform: scaleX(.9); -moz-transform: scaleX(.9); -ms-transform: scaleX(.9); -o-transform: scaleX(.9); transform: scaleX(.9)}
+.MathJax_PHTML .noError {vertical-align: ; font-size: 90%; text-align: left; color: black; padding: 1px 3px; border: 1px solid}
+</style></head><div id="cyeBlackMaskLayer" style="background-color: rgb(19, 19, 19); position: fixed; width: 1980px; height: 1080px; z-index: -2147483648;"></div>
+<body style=""><div id="MathJax_Message" style="display: none;"></div>
+<a name="top"></a>
+
+
+<!--done-->
+<div id="home">
+<div id="header">
+	<div id="blogTitle">
+	<a id="lnkBlogLogo" href="https://www.cnblogs.com/zhoujinyi/"><img id="blogLogo" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/logo.gif" alt="返回主页"></a>			
+		
+<!--done-->
+<h1><a id="Header1_HeaderTitle" class="headermaintitle" href="https://www.cnblogs.com/zhoujinyi/">DBA's Record</a></h1>
+<h2></h2>
+
+
+
+		
+	</div><!--end: blogTitle 博客的标题和副标题 -->
+	<div id="navigator">
+		
+<ul id="navList">
+<li><a id="blog_nav_sitehome" class="menu" href="https://www.cnblogs.com/">博客园</a></li>
+<li><a id="blog_nav_myhome" class="menu" href="https://www.cnblogs.com/zhoujinyi/">首页</a></li>
+<li><a id="blog_nav_newpost" class="menu" rel="nofollow" href="https://i.cnblogs.com/EditPosts.aspx?opt=1">新随笔</a></li>
+<li><a id="blog_nav_contact" class="menu" rel="nofollow" href="https://msg.cnblogs.com/send/jyzhou">联系</a></li>
+<li><a id="blog_nav_rss" class="menu" href="https://www.cnblogs.com/zhoujinyi/rss">订阅</a>
+<!--<a id="blog_nav_rss_image" class="aHeaderXML" href="https://www.cnblogs.com/zhoujinyi/rss"><img src="//www.cnblogs.com/images/xml.gif" alt="订阅" /></a>--></li>
+<li><a id="blog_nav_admin" class="menu" rel="nofollow" href="https://i.cnblogs.com/">管理</a></li>
+</ul>
+		<div class="blogStats">
+			
+			<div id="blog_stats">
+<span id="stats_post_count">随笔 - 162&nbsp; </span>
+<span id="stats_article_count">文章 - 1&nbsp; </span>
+<span id="stats-comment_count">评论 - 217</span>
+</div>
+			
+		</div><!--end: blogStats -->
+	</div><!--end: navigator 博客导航栏 -->
+</div><!--end: header 头部 -->
+
+<div id="main">
+	<div id="mainContent">
+	<div class="forFlow">
+		
+        <div id="post_detail">
+<!--done-->
+<div id="topics">
+	<div class="post">
+		<h1 class="postTitle">
+			<a id="cb_post_title_url" class="postTitle2" href="https://www.cnblogs.com/zhoujinyi/p/3437475.html">MySQL 四种事务隔离级的说明</a>
+		</h1>
+		<div class="clear"></div>
+		<div class="postBody">
+			<div id="cnblogs_post_body" class="blogpost-body"><p><strong><span style="font-size: 15px;">很早之前写的文章，重新回顾和学习下，也可以看<a href="http://tech.meituan.com/innodb-lock.html" target="_blank">这篇文章</a>说明。</span></strong></p>
+<p><span style="font-size: 15px;">按照SQL:1992 事务隔离级别，InnoDB默认是可重复读的（REPEATABLE READ）。MySQL/InnoDB 提供SQL标准所描述的所有四个事务隔离级别。你可以在命令行用--transaction-isolation选项，或在选项文件里，为所有连接设置默认隔离级别。</span><br><span style="font-size: 15px;">例如，你可以在my.inf文件的[mysqld]节里类似如下设置该选项：</span></p>
+<div class="cnblogs_code">
+<pre><span style="color: #0000ff;">transaction</span><span style="color: #808080;">-</span><span style="color: #0000ff;">isolation</span> <span style="color: #808080;">=</span> {<span style="color: #0000ff;">READ</span><span style="color: #808080;">-</span><span style="color: #0000ff;">UNCOMMITTED</span> <span style="color: #808080;">|</span> <span style="color: #0000ff;">READ</span><span style="color: #808080;">-</span><span style="color: #0000ff;">COMMITTED</span> <span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span> <span style="color: #808080;">|</span> <span style="color: #0000ff;">SERIALIZABLE</span>}</pre>
+</div>
+<p><span style="font-size: 15px;">用户可以用SET TRANSACTION语句改变单个会话或者所有新进连接的隔离级别。它的语法如下： </span></p>
+<div class="cnblogs_code">
+<pre><span style="color: #0000ff;">SET</span> <span style="color: #ff0000;">[</span><span style="color: #ff0000;">SESSION | GLOBAL</span><span style="color: #ff0000;">]</span> <span style="color: #0000ff;">TRANSACTION</span> <span style="color: #0000ff;">ISOLATION</span> <span style="color: #0000ff;">LEVEL</span> {<span style="color: #0000ff;">READ</span> <span style="color: #0000ff;">UNCOMMITTED</span> <span style="color: #808080;">|</span> <span style="color: #0000ff;">READ</span> <span style="color: #0000ff;">COMMITTED</span> <span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span> <span style="color: #0000ff;">READ</span> <span style="color: #808080;">|</span> <span style="color: #0000ff;">SERIALIZABLE</span>}</pre>
+</div>
+<p><span style="font-size: 15px;">注意：默认的行为（不带session和global）是为下一个（未开始）事务设置隔离级别。如果你使用GLOBAL关键字，语句在全局对从那点开始创建的所有新连接（除了不存在的连接）设置默认事务级别。你需要SUPER权限来做这个。使用SESSION 关键字为将来在当前连接上执行的事务设置默认事务级别。 任何客户端都能自由改变会话隔离级别（甚至在事务的中间），或者为下一个事务设置隔离级别。 </span><br><br><span style="font-size: 15px;">你可以用下列语句查询全局和会话事务隔离级别： </span></p>
+<div class="cnblogs_code">
+<pre><span style="color: #0000ff;">SELECT</span> <span style="color: #008000; font-weight: bold;">@@global</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #0000ff;">SELECT</span> <span style="color: #008000; font-weight: bold;">@@session</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #0000ff;">SELECT</span> <span style="color: #008000; font-weight: bold;">@@tx_isolation</span>;</pre>
+</div>
+<p><span style="font-size: 15px;"><br>----以上手册中的理论知识;</span><br><span style="font-size: 15px;">===========================================================================================</span><br><span style="font-size: 15px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 隔离级别&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 脏读（Dirty Read）&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 不可重复读（NonRepeatable Read）&nbsp;&nbsp;&nbsp;&nbsp; 幻读（Phantom Read） </span><br><span style="font-size: 15px;">===========================================================================================</span></p>
+<p><span style="font-size: 15px;">未提交读（Read uncommitted）&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 可能&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 可能&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 可能 </span></p>
+<p><span style="font-size: 15px;">已提交读（Read committed）&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 不可能&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 可能&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 可能 </span></p>
+<p><span style="font-size: 15px;">可重复读（Repeatable read）&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; 不可能&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 不可能&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 可能 </span></p>
+<p><span style="font-size: 15px;">可串行化（Serializable ）&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 不可能&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 不可能&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 不可能 </span></p>
+<p><span style="font-size: 15px;">===========================================================================================</span></p>
+<p><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>·</strong>未提交读(Read Uncommitted)：</span>允许脏读，也就是可能读取到其他会话中未提交事务修改的数据</span></p>
+<p><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>·</strong>提交读(Read Committed)：</span>只能读取到已经提交的数据。Oracle等多数数据库默认都是该级别 (不重复读)</span></p>
+<p><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>·</strong>可重复读(Repeated Read)：</span>可重复读。在同一个事务内的查询都是事务开始时刻一致的，InnoDB默认级别。在SQL标准中，该隔离级别消除了不可重复读，但是还存在幻象读</span></p>
+<p><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>·</strong>串行读(Serializable)：</span>完全串行化的读，每次读都需要获得表级共享锁，读写相互都会阻塞</span></p>
+<p><span style="font-size: 15px;">~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span></p>
+<p><strong><span style="font-size: 15px;">用例子说明各个级别的情况：</span></strong></p>
+<p><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>① 脏读:</strong> </span>脏读就是指当一个事务正在访问数据，并且对数据进行了修改，而这种修改还没有提交到数据库中，这时，另外一个事务也访问这个数据，然后使用了这个数据。</span></p>
+<div class="cnblogs_code"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre>session <span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;">:
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@global</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@global</span>.tx_isolation <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span>       <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@session</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@session</span>.tx_isolation <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span>       <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> start <span style="color: #0000ff;">transaction</span><span style="color: #000000;">;
+Query OK, </span><span style="color: #800000; font-weight: bold;">0</span> rows affected (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">insert</span> <span style="color: #0000ff;">into</span> ttd <span style="color: #0000ff;">values</span>(<span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;">);
+Query OK, </span><span style="color: #800000; font-weight: bold;">1</span> row affected (<span style="color: #800000; font-weight: bold;">0.05</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span><span style="color: #000000;"> ttd;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+session </span><span style="color: #800000; font-weight: bold;">2</span><span style="color: #000000;">:
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@session</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@session</span>.tx_isolation <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span>        <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@global</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@global</span>.tx_isolation <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span>   <span style="color: #808080;">|</span>        <span style="color: #008080;">--</span><span style="color: #008080;">------该隔离级别下(除了 read uncommitted)</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span><span style="color: #000000;"> ttd;
+Empty </span><span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span> sec)              <span style="color: #008080;">--</span><span style="color: #008080;">------不会出现脏读</span>
+<span style="color: #000000;">
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">set</span> session <span style="color: #0000ff;">transaction</span> <span style="color: #0000ff;">isolation</span> <span style="color: #0000ff;">level</span> <span style="color: #0000ff;">read</span> <span style="color: #0000ff;">uncommitted</span><span style="color: #000000;">;
+Query OK, </span><span style="color: #800000; font-weight: bold;">0</span> rows affected (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@session</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@session</span>.tx_isolation <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">READ</span><span style="color: #808080;">-</span><span style="color: #0000ff;">UNCOMMITTED</span>       <span style="color: #808080;">|</span>   <span style="color: #008080;">--</span><span style="color: #008080;">------该隔离级别下</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span><span style="color: #000000;"> ttd;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span>                                       <span style="color: #008080;">--</span><span style="color: #008080;">------REPEATABLE-READ级别出现脏读</span>
+
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span> sec)</pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<p><span style="font-size: 15px;"><strong>结论:</strong>session 2 在READ-UNCOMMITTED 下读取到session 1 中未提交事务修改的数据.</span><br><br><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>② 不可重复读:</strong></span>是指在一个事务内，多次读同一数据。在这个事务还没有结束时，另外一个事务也访问该同一数据。那么，在第一个事务中的两次读数据之间，由于第二个事务的修改，那么第一个事务两次读到的的数据可能是不一样的。这样就发生了在一个事务内两次读到的数据是不一样的，因此称为是不可重复读。</span></p>
+<div class="cnblogs_code"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre>session <span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;">:
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@session</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@session</span>.tx_isolation <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">READ</span><span style="color: #808080;">-</span><span style="color: #0000ff;">COMMITTED</span>         <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> start <span style="color: #0000ff;">transaction</span><span style="color: #000000;">;
+Query OK, </span><span style="color: #800000; font-weight: bold;">0</span> rows affected (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span><span style="color: #000000;"> ttd;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+session </span><span style="color: #800000; font-weight: bold;">2</span><span style="color: #000000;"> :
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@session</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@session</span>.tx_isolation <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span>        <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> start <span style="color: #0000ff;">transaction</span><span style="color: #000000;">;
+Query OK, </span><span style="color: #800000; font-weight: bold;">0</span> rows affected (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span><span style="color: #000000;"> ttd;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">insert</span> <span style="color: #0000ff;">into</span> ttd <span style="color: #0000ff;">values</span>(<span style="color: #800000; font-weight: bold;">2</span>);  <span style="color: #808080;">/</span><span style="color: #000000;">也可以更新数据
+Query OK, </span><span style="color: #800000; font-weight: bold;">1</span> row affected (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span><span style="color: #000000;"> ttd;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">2</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #800000; font-weight: bold;">2</span> rows <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">commit</span><span style="color: #000000;">;
+Query OK, </span><span style="color: #800000; font-weight: bold;">0</span> rows affected (<span style="color: #800000; font-weight: bold;">0.02</span><span style="color: #000000;"> sec)
+
+session </span><span style="color: #800000; font-weight: bold;">2</span> 提交后,查看session <span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;"> 的结果;
+
+session </span><span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;">:
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span><span style="color: #000000;"> ttd;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span>                             <span style="color: #008080;">--</span><span style="color: #008080;">------和第一次的结果不一样,READ-COMMITTED 级别出现了不重复读</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">2</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #800000; font-weight: bold;">2</span> rows <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span> sec)</pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<p><span style="font-size: 15px; color: #ff0000;"><strong>③ 可重复读:</strong></span></p>
+<div class="cnblogs_code"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre>session <span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;">:
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@session</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@session</span>.tx_isolation <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span>        <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> start <span style="color: #0000ff;">transaction</span><span style="color: #000000;">;
+Query OK, </span><span style="color: #800000; font-weight: bold;">0</span> rows affected (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span><span style="color: #000000;"> ttd;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">2</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #800000; font-weight: bold;">2</span> rows <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+session </span><span style="color: #800000; font-weight: bold;">2</span><span style="color: #000000;"> :
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@session</span><span style="color: #000000;">.tx_isolation;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@session</span>.tx_isolation <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span>        <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----------------------+</span>
+<span style="color: #800000; font-weight: bold;">1</span> row <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> start <span style="color: #0000ff;">transaction</span><span style="color: #000000;">;
+Query OK, </span><span style="color: #800000; font-weight: bold;">0</span> rows affected (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">insert</span> <span style="color: #0000ff;">into</span> ttd <span style="color: #0000ff;">values</span>(<span style="color: #800000; font-weight: bold;">3</span><span style="color: #000000;">);
+Query OK, </span><span style="color: #800000; font-weight: bold;">1</span> row affected (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">commit</span><span style="color: #000000;">;
+Query OK, </span><span style="color: #800000; font-weight: bold;">0</span> rows affected (<span style="color: #800000; font-weight: bold;">0.03</span><span style="color: #000000;"> sec)
+
+session </span><span style="color: #800000; font-weight: bold;">2</span> 提交后,查看session <span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;"> 的结果;
+
+session </span><span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;">:
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span><span style="color: #000000;"> ttd;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span>                                      <span style="color: #008080;">--</span><span style="color: #008080;">------和第一次的结果一样,REPEATABLE-READ级别出现了重复读</span>
+<span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">2</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+</span>
+<span style="color: #800000; font-weight: bold;">2</span> rows <span style="color: #808080;">in</span> <span style="color: #0000ff;">set</span> (<span style="color: #800000; font-weight: bold;">0.00</span><span style="color: #000000;"> sec)
+
+(</span><span style="color: #0000ff;">commit</span> session <span style="color: #800000; font-weight: bold;">1</span> 之后 再select <span style="color: #808080;">*</span> <span style="color: #0000ff;">from</span> ttd 可以看到session <span style="color: #800000; font-weight: bold;">2</span> 插入的数据3)</pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<p><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>④ 幻读:</strong></span>第一个事务对一个表中的数据进行了修改，这种修改涉及到表中的全部数据行。同时，第二个事务也修改这个表中的数据，这种修改是向表中插入一行新数据。那么，以后就会发生操作第一个事务的用户发现表中还有没有修改的数据行，就好象发生了幻觉一样。</span></p>
+<div class="cnblogs_code"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre>mysql<span style="color: #808080;">&gt;</span><span style="color: #0000ff;">CREATE</span> <span style="color: #0000ff;">TABLE</span><span style="color: #000000;"> `t_bitfly` (
+`id` </span><span style="color: #0000ff;">bigint</span>(<span style="color: #800000; font-weight: bold;">20</span>) <span style="color: #808080;">NOT</span> <span style="color: #0000ff;">NULL</span> <span style="color: #0000ff;">default</span> <span style="color: #ff0000;">'</span><span style="color: #ff0000;">0</span><span style="color: #ff0000;">'</span><span style="color: #000000;">,
+`value` </span><span style="color: #0000ff;">varchar</span>(<span style="color: #800000; font-weight: bold;">32</span>) <span style="color: #0000ff;">default</span> <span style="color: #0000ff;">NULL</span><span style="color: #000000;">,
+</span><span style="color: #0000ff;">PRIMARY</span> <span style="color: #0000ff;">KEY</span><span style="color: #000000;"> (`id`)
+) ENGINE</span><span style="color: #808080;">=</span><span style="color: #000000;">InnoDB
+
+mysql</span><span style="color: #808080;">&gt;</span> <span style="color: #0000ff;">select</span> <span style="color: #008000; font-weight: bold;">@@global</span>.tx_isolation, <span style="color: #008000; font-weight: bold;">@@tx_isolation</span><span style="color: #000000;">;
+</span><span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+-----------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@global</span>.tx_isolation <span style="color: #808080;">|</span> <span style="color: #008000; font-weight: bold;">@@tx_isolation</span>  <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+-----------------+</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span>       <span style="color: #808080;">|</span> <span style="color: #0000ff;">REPEATABLE</span><span style="color: #808080;">-</span><span style="color: #0000ff;">READ</span> <span style="color: #808080;">|</span>
+<span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">---------------------+-----------------+</span>
+<span style="color: #000000;"><strong>
+实验一：</strong>
+
+t Session A                   Session B
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> START <span style="color: #0000ff;">TRANSACTION</span>;          START <span style="color: #0000ff;">TRANSACTION</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> empty <span style="color: #0000ff;">set</span>
+<span style="color: #808080;">|</span>                             <span style="color: #0000ff;">INSERT</span> <span style="color: #0000ff;">INTO</span><span style="color: #000000;"> t_bitfly
+</span><span style="color: #808080;">|</span>                             <span style="color: #0000ff;">VALUES</span> (<span style="color: #800000; font-weight: bold;">1</span>, <span style="color: #ff0000;">'</span><span style="color: #ff0000;">a</span><span style="color: #ff0000;">'</span><span style="color: #000000;">);
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> empty <span style="color: #0000ff;">set</span>
+<span style="color: #808080;">|</span>                             <span style="color: #0000ff;">COMMIT</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> empty <span style="color: #0000ff;">set</span>
+<span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">INSERT</span> <span style="color: #0000ff;">INTO</span> t_bitfly <span style="color: #0000ff;">VALUES</span> (<span style="color: #800000; font-weight: bold;">1</span>, <span style="color: #ff0000;">'</span><span style="color: #ff0000;">a</span><span style="color: #ff0000;">'</span><span style="color: #000000;">);
+</span><span style="color: #808080;">|</span> ERROR <span style="color: #800000; font-weight: bold;">1062</span> (<span style="color: #800000; font-weight: bold;">23000</span><span style="color: #000000;">):
+</span><span style="color: #808080;">|</span> Duplicate entry <span style="color: #ff0000;">'</span><span style="color: #ff0000;">1</span><span style="color: #ff0000;">'</span> <span style="color: #0000ff;">for</span> <span style="color: #0000ff;">key</span> <span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;">
+v (shit, 刚刚明明告诉我没有这条记录的)
+
+如此就出现了幻读，以为表里没有数据，其实数据已经存在了，傻乎乎的提交后，才发现数据冲突了。
+
+<strong>实验二：</strong>
+
+t Session A                  Session B
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> START <span style="color: #0000ff;">TRANSACTION</span>;         START <span style="color: #0000ff;">TRANSACTION</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span>                            <span style="color: #0000ff;">INSERT</span> <span style="color: #0000ff;">INTO</span><span style="color: #000000;"> t_bitfly
+</span><span style="color: #808080;">|</span>                            <span style="color: #0000ff;">VALUES</span> (<span style="color: #800000; font-weight: bold;">2</span>, <span style="color: #ff0000;">'</span><span style="color: #ff0000;">b</span><span style="color: #ff0000;">'</span><span style="color: #000000;">);
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span>                            <span style="color: #0000ff;">COMMIT</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">UPDATE</span> t_bitfly <span style="color: #0000ff;">SET</span> value<span style="color: #808080;">=</span><span style="color: #ff0000;">'</span><span style="color: #ff0000;">z</span><span style="color: #ff0000;">'</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span> Rows matched: <span style="color: #800000; font-weight: bold;">2</span>  Changed: <span style="color: #800000; font-weight: bold;">2</span>  Warnings: <span style="color: #800000; font-weight: bold;">0</span>
+<span style="color: #808080;">|</span><span style="color: #000000;"> (怎么多出来一行)
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> z     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">2</span> <span style="color: #808080;">|</span> z     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span></pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<p><span style="font-size: 15px;">本事务中第一次读取出一行，做了一次更新后，另一个事务里提交的数据就出现了。也可以看做是一种幻读。</span><br><span style="font-size: 15px; color: #ff0000;">当隔离级别是可重复读，且禁用innodb_locks_unsafe_for_binlog的情况下，在搜索和扫描index的时候使用的next-key locks可以避免幻读。</span><br><br><span style="font-size: 15px;">再看一个实验，要注意，表t_bitfly里的id为主键字段。</span></p>
+<div class="cnblogs_code"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre><span style="color: #000000;"><span style="color: #000000;"><strong>实验三：</strong></span><br>t Session A                 Session B
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> START <span style="color: #0000ff;">TRANSACTION</span>;        START <span style="color: #0000ff;">TRANSACTION</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly
+</span><span style="color: #808080;">|</span> <span style="color: #0000ff;">WHERE</span> id&lt;<span style="color: #808080;">=</span><span style="color: #800000; font-weight: bold;">1</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">FOR</span> <span style="color: #0000ff;">UPDATE</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span>                           <span style="color: #0000ff;">INSERT</span> <span style="color: #0000ff;">INTO</span><span style="color: #000000;"> t_bitfly
+</span><span style="color: #808080;">|</span>                           <span style="color: #0000ff;">VALUES</span> (<span style="color: #800000; font-weight: bold;">2</span>, <span style="color: #ff0000;">'</span><span style="color: #ff0000;">b</span><span style="color: #ff0000;">'</span><span style="color: #000000;">);
+</span><span style="color: #808080;">|</span>                           Query OK, <span style="color: #800000; font-weight: bold;">1</span><span style="color: #000000;"> row affected
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span>                           <span style="color: #0000ff;">INSERT</span> <span style="color: #0000ff;">INTO</span><span style="color: #000000;"> t_bitfly
+</span><span style="color: #808080;">|</span>                           <span style="color: #0000ff;">VALUES</span> (<span style="color: #800000; font-weight: bold;">0</span>, <span style="color: #ff0000;">'</span><span style="color: #ff0000;">0</span><span style="color: #ff0000;">'</span><span style="color: #000000;">);
+</span><span style="color: #808080;">|</span>                           (waiting <span style="color: #0000ff;">for</span><span style="color: #000000;"> lock ...</span><span style="color: #0000ff;">then</span><span style="color: #000000;"> timeout)
+</span><span style="color: #808080;">|</span>                           ERROR <span style="color: #800000; font-weight: bold;">1205</span><span style="color: #000000;"> (HY000):
+</span><span style="color: #808080;">|</span><span style="color: #000000;">                           Lock wait timeout exceeded;
+</span><span style="color: #808080;">|</span>                           try restarting <span style="color: #0000ff;">transaction</span>
+<span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span>                           <span style="color: #0000ff;">COMMIT</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id   <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>    <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">----+-------+</span></pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<p><span style="font-size: 15px;">可以看到，用id&lt;=1加的锁，只锁住了id&lt;=1的范围，可以成功添加id为2的记录，添加id为0的记录时就会等待锁的释放。</span></p>
+<div class="cnblogs_code"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre><span style="color: #000000;"><span style="color: #000000;"><strong>实验四：一致性读和提交读</strong></span><br>t Session A                      Session B
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> START <span style="color: #0000ff;">TRANSACTION</span>;             START <span style="color: #0000ff;">TRANSACTION</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>  <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span>                                <span style="color: #0000ff;">INSERT</span> <span style="color: #0000ff;">INTO</span><span style="color: #000000;"> t_bitfly
+</span><span style="color: #808080;">|</span>                                <span style="color: #0000ff;">VALUES</span> (<span style="color: #800000; font-weight: bold;">2</span>, <span style="color: #ff0000;">'</span><span style="color: #ff0000;">b</span><span style="color: #ff0000;">'</span><span style="color: #000000;">);
+</span><span style="color: #808080;">|</span>                                <span style="color: #0000ff;">COMMIT</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>  <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span> t_bitfly LOCK <span style="color: #808080;">IN</span><span style="color: #000000;"> SHARE MODE;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>  <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>  <span style="color: #800000; font-weight: bold;">2</span> <span style="color: #808080;">|</span> b     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span> t_bitfly <span style="color: #0000ff;">FOR</span> <span style="color: #0000ff;">UPDATE</span><span style="color: #000000;">;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>  <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>  <span style="color: #800000; font-weight: bold;">2</span> <span style="color: #808080;">|</span> b     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #0000ff;">SELECT</span> <span style="color: #808080;">*</span> <span style="color: #0000ff;">FROM</span><span style="color: #000000;"> t_bitfly;
+</span><span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span> id <span style="color: #808080;">|</span> value <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">|</span>  <span style="color: #800000; font-weight: bold;">1</span> <span style="color: #808080;">|</span> a     <span style="color: #808080;">|</span>
+<span style="color: #808080;">|</span> <span style="color: #808080;">+</span><span style="color: #008080;">--</span><span style="color: #008080;">--+-------+</span></pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<p><span style="font-size: 15px;">如果使用普通的读，会得到一致性的结果，如果使用了<span style="color: #ff0000;">加锁的读，就会读到“最新的”“提交”读的结果</span>。</span><br><br><span style="font-size: 15px;">本身，可重复读和提交读是矛盾的。在同一个事务里，如果保证了可重复读，就会看不到其他事务的提交，违背了提交读；如果保证了提交读，就会导致前后两次读到的结果不一致，违背了可重复读。</span></p>
+<p><span style="font-size: 15px;">可以这么讲，InnoDB提供了这样的机制，<span style="color: #ff0000;">在默认的可重复读的隔离级别里，可以使用加锁读去查询最新的数据（提交读）。</span></span><br><span style="font-size: 15px;">MySQL InnoDB的可重复读并不保证避免幻读，需要应用使用加锁读来保证。而这个加锁度使用到的机制就是<a href="http://www.cnblogs.com/zhoujinyi/p/3435982.html">next-key locks</a>。</span><br><br><span style="font-size: 16px;"><strong>总结:</strong></span></p>
+<p><span style="font-size: 15px;">四个级别逐渐增强，每个级别解决一个问题。事务级别越高,性能越差,大多数环境read committed 可以用.记住4个隔离级别的特点(上面的例子);</span></p></div><div id="MySignature" style="display: block;">~~~~~~~~~~~~~~~
+万物之中,希望至美
+~~~~~~~~~~~~~~~</div>
+<div class="clear"></div>
+<div id="blog_post_info_block">
+<div id="BlogPostCategory">分类: <a href="https://www.cnblogs.com/zhoujinyi/category/421066.html" target="_blank">MySQL</a></div>
+<div id="EntryTag">标签: <a href="https://www.cnblogs.com/zhoujinyi/tag/transaction%20level/">transaction level</a>, <a href="https://www.cnblogs.com/zhoujinyi/tag/isolation/">isolation</a>, <a href="https://www.cnblogs.com/zhoujinyi/tag/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/">事务隔离级别</a></div>
+<div id="blog_post_info"><div id="green_channel">
+        <a href="javascript:void(0);" id="green_channel_digg">已推荐</a>
+            <a id="green_channel_follow" href="javascript:void(0);">已关注</a>
+    <a id="green_channel_favorite" onclick="AddToWz(cb_entryId);return false;" href="javascript:void(0);">收藏该文</a>
+    <a id="green_channel_weibo" href="javascript:void(0);" title="分享至新浪微博" onclick="ShareToTsina()"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/icon_weibo_24.png" alt=""></a>
+    <a id="green_channel_wechat" href="javascript:void(0);" title="分享至微信" onclick="shareOnWechat()"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/wechat.png" alt=""></a>
+</div>
+<div id="author_profile">
+    <div id="author_profile_info" class="author_profile_info">
+            <a href="http://home.cnblogs.com/u/zhoujinyi/" target="_blank"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/u163084.jpg" class="author_avatar" alt=""></a>
+        <div id="author_profile_detail" class="author_profile_info">
+            <a href="http://home.cnblogs.com/u/zhoujinyi/">jyzhou</a><br>
+            <a href="http://home.cnblogs.com/u/zhoujinyi/followees">关注 - 14</a><br>
+            <a href="http://home.cnblogs.com/u/zhoujinyi/followers">粉丝 - 466</a>
+        </div>
+    </div>
+    <div class="clear"></div>
+    <div id="author_profile_honor"></div>
+    <div id="author_profile_follow">
+                我在关注他 <a href="javascript:void(0);" onclick="unfollow(&#39;b42b5097-a2d2-df11-ac81-842b2b196315&#39;);return false;">取消关注</a>
+    </div>
+</div>
+<div id="div_digg">
+    <div class="diggit" onclick="votePost(3437475,&#39;Digg&#39;)">
+        <span class="diggnum" id="digg_count">15</span>
+    </div>
+    <div class="buryit" onclick="votePost(3437475,&#39;Bury&#39;)">
+        <span class="burynum" id="bury_count">3</span>
+    </div>
+    <div class="clear"></div>
+    <div class="diggword" id="digg_tips">
+            您已推荐过，<a href="javascript:void(0);" onclick="votePost(3437475,&#39;Digg&#39;, true);return false;" class="digg_gray">取消</a>
+    </div>
+</div>
+<script type="text/javascript">
+    currentDiggType = 1;
+</script></div>
+<div class="clear"></div>
+<div id="post_next_prev"><a href="https://www.cnblogs.com/zhoujinyi/p/3435982.html" class="p_n_p_prefix">« </a> 上一篇：<a href="https://www.cnblogs.com/zhoujinyi/p/3435982.html" title="发布于2013-11-21 17:55">Innodb锁机制：Next-Key Lock 浅谈</a><br><a href="https://www.cnblogs.com/zhoujinyi/p/3459540.html" class="p_n_p_prefix">» </a> 下一篇：<a href="https://www.cnblogs.com/zhoujinyi/p/3459540.html" title="发布于2013-12-05 18:19">MySQL 利用SQL线程对Binlog操作</a><br></div>
+</div>
+
+
+		</div>
+		<div class="postDesc">posted @ <span id="post-date">2013-11-22 14:40</span> <a href="https://www.cnblogs.com/zhoujinyi/">jyzhou</a> 阅读(<span id="post_view_count">78034</span>) 评论(<span id="post_comment_count">15</span>)  <a href="https://i.cnblogs.com/EditPosts.aspx?postid=3437475" rel="nofollow">编辑</a> <a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#" onclick="AddToWz(3437475);return false;">收藏</a></div>
+	</div>
+	<script type="text/javascript">var allowComments=true,cb_blogId=128350,cb_entryId=3437475,cb_blogApp=currentBlogApp,cb_blogUserGuid='b42b5097-a2d2-df11-ac81-842b2b196315',cb_entryCreatedDate='2013/11/22 14:40:00';loadViewCount(cb_entryId);var cb_postType=1;var isMarkdown=false;</script>
+	
+</div><!--end: topics 文章、评论容器-->
+</div><a name="!comments"></a><div id="blog-comments-placeholder"><div id="comments_pager_top"></div>
+<br>
+<div class="feedback_area_title">评论列表</div>
+<div class="feedbackNoItems"></div>	
+
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(2822391,&#39;ZqpIuk8NjssuCoWeTSiP94kS4Z6wUkb9awut8KtIxONpcjJLg2Dpmw==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(2822391,&#39;ZqpIuk8NjssuCoWeTSiP94kS4Z6wUkb9awut8KtIxONpcjJLg2Dpmw==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822391" class="layer">#1楼</a><a name="2822391" id="comment_anchor_2822391"></a>  <span class="comment_date">2013-11-22 19:35</span> <a id="a_comment_author_2822391" href="https://www.cnblogs.com/lukyw/" target="_blank">LukyW</a> <a href="http://msg.cnblogs.com/send/LukyW" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_2822391" class="blog_comment_body">我觉得可重复读不是当前事务看不到其他事务的提交，而是根本不允许其他事务对当前事务读取的数据进行修改并提交</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(2822391,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(2822391,&#39;Bury&#39;,this)">反对(3)</a></div><span id="comment_2822391_avatar" style="display:none;">http://pic.cnblogs.com/face/361393/20160425124258.png</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(2822414,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(2822414,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822414" class="layer">#2楼</a><a name="2822414" id="comment_anchor_2822414"></a>[<span class="louzhu">楼主</span>]  <span class="comment_date">2013-11-22 20:54</span> <a id="a_comment_author_2822414" href="https://www.cnblogs.com/zhoujinyi/" target="_blank">jyzhou</a> <a href="http://msg.cnblogs.com/send/jyzhou" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_2822414" class="blog_comment_body"><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822391" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,2822391);">@</a>
+LukyW<br>同意 "不允许其他事务对当前事务读取的数据进行修改并提交"，这是因为当前事务已经有S锁。但要是其他事务修改当前事务未读取的数据且提交，当前事务也看不到最新的数据（例子）。这个就是ACID中的隔离性的特点了。</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(2822414,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(2822414,&#39;Bury&#39;,this)">反对(2)</a></div><span id="comment_2822414_avatar" style="display:none;">http://pic.cnblogs.com/face/u163084.jpg?id=11172527</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(2822447,&#39;ZqpIuk8NjssuCoWeTSiP94kS4Z6wUkb9awut8KtIxONpcjJLg2Dpmw==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(2822447,&#39;ZqpIuk8NjssuCoWeTSiP94kS4Z6wUkb9awut8KtIxONpcjJLg2Dpmw==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822447" class="layer">#3楼</a><a name="2822447" id="comment_anchor_2822447"></a>  <span class="comment_date">2013-11-22 22:11</span> <a id="a_comment_author_2822447" href="https://www.cnblogs.com/lukyw/" target="_blank">LukyW</a> <a href="http://msg.cnblogs.com/send/LukyW" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_2822447" class="blog_comment_body"><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822414" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,2822414);">@</a>
+jyzhou<br><fieldset class="comment_quote"><legend><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822414" title="查看引用原文">引用</a></legend>@LukyW<br>同意 "不允许其他事务对当前事务读取的数据进行修改并提交"，这是因为当前事务已经有S锁。但要是其他事务修改当前事务未读取的数据且提交，当前事务也看不到最新的数据（例子）。这个就是ACID中的隔离性的特点了。</fieldset><br><br>我的意思是说他们不是矛盾的，可重复读的前提不是要先保证提交读么？</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(2822447,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(2822447,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_2822447_avatar" style="display:none;">http://pic.cnblogs.com/face/361393/20160425124258.png</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(2822508,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(2822508,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822508" class="layer">#4楼</a><a name="2822508" id="comment_anchor_2822508"></a>[<span class="louzhu">楼主</span>]  <span class="comment_date">2013-11-23 00:21</span> <a id="a_comment_author_2822508" href="https://www.cnblogs.com/zhoujinyi/" target="_blank">jyzhou</a> <a href="http://msg.cnblogs.com/send/jyzhou" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_2822508" class="blog_comment_body"><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822447" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,2822447);">@</a>
+LukyW<br>他们是不同的事务隔离级别，不可重复读和可重复读没有谁保证谁的。不过可重复读可以利用加锁读实现提交读的效果。个人理解:)</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(2822508,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(2822508,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_2822508_avatar" style="display:none;">http://pic.cnblogs.com/face/u163084.jpg?id=11172527</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(3438622,&#39;XOjgn1O6DCEv7BK0kZ5/GOcBhJyxf1iBUI8t+wDtSrq/0AtmQNCFGA==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(3438622,&#39;XOjgn1O6DCEv7BK0kZ5/GOcBhJyxf1iBUI8t+wDtSrq/0AtmQNCFGA==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3438622" class="layer">#5楼</a><a name="3438622" id="comment_anchor_3438622"></a>  <span class="comment_date">2016-05-25 01:57</span> <a id="a_comment_author_3438622" href="https://www.cnblogs.com/csniper/" target="_blank">CSniper</a> <a href="http://msg.cnblogs.com/send/CSniper" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3438622" class="blog_comment_body">④ 幻读 －〉实验三：<br>mysql5.7.12,表中只有一条记录（id=1）的时候，<br>Session A <br>| SELECT * FROM t_bitfly<br>| WHERE id&lt;=1<br>| FOR UPDATE;<br>Session B<br>INSERT INTO t_bitfly VALUES (2, 'b');也失败<br>(waiting for lock ...then timeout)<br>但是有两条以上记录时则可以正常插入。<br>这是怎么回事？</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3438622,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3438622,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3438622_avatar" style="display:none;">http://pic.cnblogs.com/face/u398467.jpg?id=13221313</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(3441982,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(3441982,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3441982" class="layer">#6楼</a><a name="3441982" id="comment_anchor_3441982"></a>[<span class="louzhu">楼主</span>]  <span class="comment_date">2016-05-30 14:08</span> <a id="a_comment_author_3441982" href="https://www.cnblogs.com/zhoujinyi/" target="_blank">jyzhou</a> <a href="http://msg.cnblogs.com/send/jyzhou" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3441982" class="blog_comment_body"><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3438622" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,3438622);">@</a>
+CSniper<br>这个是由于next key lock引起的，可以参考下这篇文章：<br><a href="http://www.cnblogs.com/zhoujinyi/p/3435982.html" target="_blank">http://www.cnblogs.com/zhoujinyi/p/3435982.html</a></div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3441982,&#39;Digg&#39;,this)">支持(1)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3441982,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3441982_avatar" style="display:none;">http://pic.cnblogs.com/face/u163084.jpg?id=11172527</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(3663094,&#39;hL5vG9bUOBN9eQwHtJRz8q5qDPxe69bJVH9CA16pucRlBIwaBTca8g==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(3663094,&#39;hL5vG9bUOBN9eQwHtJRz8q5qDPxe69bJVH9CA16pucRlBIwaBTca8g==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3663094" class="layer">#7楼</a><a name="3663094" id="comment_anchor_3663094"></a>  <span class="comment_date">2017-04-09 13:13</span> <a id="a_comment_author_3663094" href="https://www.cnblogs.com/jackyfkc/" target="_blank">Jackyfkc</a> <a href="http://msg.cnblogs.com/send/Jackyfkc" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3663094" class="blog_comment_body"><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822414" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,2822414);">@</a>
+jyzhou<br><fieldset class="comment_quote"><legend><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#2822414" title="查看引用原文">引用</a></legend><br>@LukyW<br>同意 "不允许其他事务对当前事务读取的数据进行修改并提交"，这是因为当前事务已经有S锁。但要是其他事务修改当前事务未读取的数据且提交，当前事务也看不到最新的数据（例子）。这个就是ACID中的隔离性的特点了。<br></fieldset><br><br>在 RR 级别下，select * 一般是不加 S 锁的，使用 MVCC，读的快照数据；这时其他事务是可以对当前事务读取的数据进行修改的</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3663094,&#39;Digg&#39;,this)">支持(1)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3663094,&#39;Bury&#39;,this)">反对(0)</a></div>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(3663102,&#39;hL5vG9bUOBN9eQwHtJRz8q5qDPxe69bJVH9CA16pucRlBIwaBTca8g==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(3663102,&#39;hL5vG9bUOBN9eQwHtJRz8q5qDPxe69bJVH9CA16pucRlBIwaBTca8g==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3663102" class="layer">#8楼</a><a name="3663102" id="comment_anchor_3663102"></a>  <span class="comment_date">2017-04-09 13:33</span> <a id="a_comment_author_3663102" href="https://www.cnblogs.com/jackyfkc/" target="_blank">Jackyfkc</a> <a href="http://msg.cnblogs.com/send/Jackyfkc" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3663102" class="blog_comment_body">4 幻读一节，最后得到的结论是不对的<br>"""<br>　　| INSERT INTO t_bitfly VALUES (1, 'a');<br>　　| ERROR 1062 (23000):<br>　　| Duplicate entry '1' for key 1　　<br>　　v (shit, 刚刚明明告诉我没有这条记录的)<br><br>　　如此就出现了幻读，以为表里没有数据，其实数据已经存在了，傻乎乎的提交后，才发现数据冲突了。<br>"""<br><br>幻读是针对于读操作 select 来说的，具体是指同一事务中同一select 语句多次执行会得到不同的 rows；实验一中最后的 insert 会加 X 锁，最后当然会失败；<br><br>实际中不推荐 select(非 locking read)... 后直接 + 写操作；因为 RR 中读不到某条数据，并不代表该条数据不存在；因为RR 用的consistent read，读取的是事务中第一条 select 执行时的快照（楼主依赖的结论本不成立，在 RC级别下是可以这样认为的）；而是用 locking read + write，如楼主实验三</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3663102,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3663102,&#39;Bury&#39;,this)">反对(0)</a></div>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(3664447,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(3664447,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3664447" class="layer">#9楼</a><a name="3664447" id="comment_anchor_3664447"></a>[<span class="louzhu">楼主</span>]  <span class="comment_date">2017-04-10 17:41</span> <a id="a_comment_author_3664447" href="https://www.cnblogs.com/zhoujinyi/" target="_blank">jyzhou</a> <a href="http://msg.cnblogs.com/send/jyzhou" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3664447" class="blog_comment_body"><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3663094" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,3663094);">@</a>
+Jackyfkc <br>是的，是的，再RR级别下，是不需要加锁的， 多谢指正。:)</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3664447,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3664447,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3664447_avatar" style="display:none;">http://pic.cnblogs.com/face/u163084.jpg?id=11172527</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(3664453,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(3664453,&#39;KUDCNSCrshh9pvBbXdXz/F7DCS5V/Xq3mJZ831hOzRtRhtxv5BZrFQ==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3664453" class="layer">#10楼</a><a name="3664453" id="comment_anchor_3664453"></a>[<span class="louzhu">楼主</span>]  <span class="comment_date">2017-04-10 17:44</span> <a id="a_comment_author_3664453" href="https://www.cnblogs.com/zhoujinyi/" target="_blank">jyzhou</a> <a href="http://msg.cnblogs.com/send/jyzhou" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3664453" class="blog_comment_body"><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3663102" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,3663102);">@</a>
+Jackyfkc<br><fieldset class="comment_quote"><legend><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3663102" title="查看引用原文">引用</a></legend><br>4 幻读一节，最后得到的结论是不对的<br>"""<br>　　| INSERT INTO t_bitfly VALUES (1, 'a');<br>　　| ERROR 1062 (23000):<br>　　| Duplicate entry '1' for key 1　　<br>　　v (shit, 刚刚明明告诉我没有这条记录的)<br><br>　　如此就出现了幻读，以为表里没有数据，其实数据已经存在了，傻乎乎的提交后，才发现数据冲突了。<br>"""<br><br>幻读是针对于读操作 select 来说的，具体是指同一事务中同一select 语句多次执行会得到不同的 rows；实验一中最后的 insert 会加 X 锁，最后当然会失败；<br><br>实际中不推...<br></fieldset><br>那如何解释当前读（加锁读）出现的的情况？</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3664453,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3664453,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3664453_avatar" style="display:none;">http://pic.cnblogs.com/face/u163084.jpg?id=11172527</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(3664531,&#39;hL5vG9bUOBN9eQwHtJRz8q5qDPxe69bJVH9CA16pucRlBIwaBTca8g==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(3664531,&#39;hL5vG9bUOBN9eQwHtJRz8q5qDPxe69bJVH9CA16pucRlBIwaBTca8g==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3664531" class="layer">#11楼</a><a name="3664531" id="comment_anchor_3664531"></a>  <span class="comment_date">2017-04-10 18:42</span> <a id="a_comment_author_3664531" href="https://www.cnblogs.com/jackyfkc/" target="_blank">Jackyfkc</a> <a href="http://msg.cnblogs.com/send/Jackyfkc" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3664531" class="blog_comment_body"><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3664453" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,3664453);">@</a>
+jyzhou<br><fieldset class="comment_quote"><legend><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3664453" title="查看引用原文">引用</a></legend><br>@Jackyfkc<br><fieldset class="comment_quote"><legend>引用</legend>引用<br>4 幻读一节，最后得到的结论是不对的<br>"""<br>　　| INSERT INTO t_bitfly VALUES (1, 'a');<br>　　| ERROR 1062 (23000):<br>　　| Duplicate entry '1' for key 1　　<br>　　v (shit, 刚刚明明告诉我没有这条记录的)<br><br>　　如此就出现了幻读，以为表里没有数据，其实数据已经存在了，傻乎乎的提交后，才发现数据冲突了。<br>"""<br><br>幻读是针对于读操作 select 来说的，具体是指同一事务中同一select 语句多次执行会得到不同的 rows；实验一中最后的 insert 会加...<br></fieldset><br><br>RR 级别下：locking read(select ... in share mode/select ...for update)不同于 consistent read，它会读最新状态的数据，并且会加 S 或者 X 锁；后者读的快照数据，不会加任何锁<br><br>二种 read 并不能说是矛盾的，它们用于不同的目的；实际中应该根据具体的场景决定使用哪种 read<br><br>可以阅读下<br> https://dev.mysql.com/doc/refman/5.7/en/innodb-consistent-read.html<br>https://dev.mysql.com/doc/refman/5.7/en/innodb-locking-reads.html</fieldset></div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3664531,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3664531,&#39;Bury&#39;,this)">反对(0)</a></div>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(3856506,&#39;SV2yVlSJH2DwPbAIHsrnGD53rKGbOyjTzXwuIHagM3cWR726/ce/YQ==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(3856506,&#39;SV2yVlSJH2DwPbAIHsrnGD53rKGbOyjTzXwuIHagM3cWR726/ce/YQ==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#3856506" class="layer">#12楼</a><a name="3856506" id="comment_anchor_3856506"></a>  <span class="comment_date">2017-12-03 13:06</span> <a id="a_comment_author_3856506" href="https://www.cnblogs.com/Hdaydayup/" target="_blank">甜甜咿呀咿呀哟</a> <a href="http://msg.cnblogs.com/send/%E7%94%9C%E7%94%9C%E5%92%BF%E5%91%80%E5%92%BF%E5%91%80%E5%93%9F" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3856506" class="blog_comment_body">INSERT INTO t_bitfly<br>|                           VALUES (2, 'b');<br>|                           Query OK, 1 row affected<br><br>我自己操作的时候，这句插不进去，感觉是锁住了整棵索引树吧，而不是范围锁住</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3856506,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3856506,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3856506_avatar" style="display:none;">http://pic.cnblogs.com/face/1035111/20160929202329.png</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(4007961,&#39;qkisNI0pr+fvw0Es9iOzPXLgwACy5xI2hg9M44CuzGqm9pnmbo7vvQ==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(4007961,&#39;qkisNI0pr+fvw0Es9iOzPXLgwACy5xI2hg9M44CuzGqm9pnmbo7vvQ==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#4007961" class="layer">#13楼</a><a name="4007961" id="comment_anchor_4007961"></a>  <span class="comment_date">2018-06-28 17:53</span> <a id="a_comment_author_4007961" href="https://www.cnblogs.com/zhugablog/" target="_blank">猪猪小飞侠</a> <a href="http://msg.cnblogs.com/send/%E7%8C%AA%E7%8C%AA%E5%B0%8F%E9%A3%9E%E4%BE%A0" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_4007961" class="blog_comment_body">RR模式下，如果主键不明确指定的话，应该是表锁，所以实验三应该是有问题</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(4007961,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(4007961,&#39;Bury&#39;,this)">反对(0)</a></div>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(4008141,&#39;fCgyrmVxW+ipPV6lkW7EI+sbK9znlchL3hlna7oF1YHcb4hlCRxMQA==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(4008141,&#39;fCgyrmVxW+ipPV6lkW7EI+sbK9znlchL3hlna7oF1YHcb4hlCRxMQA==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#4008141" class="layer">#14楼</a><a name="4008141" id="comment_anchor_4008141"></a>  <span class="comment_date">2018-06-28 21:26</span> <a id="a_comment_author_4008141" href="https://www.cnblogs.com/imjamin/" target="_blank">chen_jamin</a> <a href="http://msg.cnblogs.com/send/chen_jamin" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_4008141" class="blog_comment_body">第四个,update 的时候就加排他锁了,怎么insert得进去,除非第一个事务commit</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(4008141,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(4008141,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_4008141_avatar" style="display:none;">http://pic.cnblogs.com/face/924670/20180629122022.png</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"><a href="javascript:void(0);" onclick="return ReplyComment(4122809,&#39;kcZo7uJXZfiSKE7hrhabr0RoKUBecsLDjL1M5EcFQaR8pJ9VW7W91Q==&#39;)">回复</a><a href="javascript:void(0);" onclick="return QuoteComment(4122809,&#39;kcZo7uJXZfiSKE7hrhabr0RoKUBecsLDjL1M5EcFQaR8pJ9VW7W91Q==&#39;)">引用</a></span>
+				</div>
+				<a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#4122809" class="layer">#15楼</a><a name="4122809" id="comment_anchor_4122809"></a><span id="comment-maxId" style="display:none;">4122809</span><span id="comment-maxDate" style="display:none;">2018/11/26 13:57:19</span>  <span class="comment_date">2018-11-26 13:57</span> <a id="a_comment_author_4122809" href="http://home.cnblogs.com/u/1379678/" target="_blank">SpecialYang</a> <a href="http://msg.cnblogs.com/send/SpecialYang" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_4122809" class="blog_comment_body">可重复读的情况下，为什么会出现幻读啊？还是不理解呀</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(4122809,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(4122809,&#39;Bury&#39;,this)">反对(0)</a></div>
+			</div>
+		</div>
+	<div id="comments_pager_bottom"></div></div><script type="text/javascript">var commentManager = new blogCommentManager();commentManager.renderComments(0);</script>
+<div id="comment_form" class="commentform">
+<a name="commentform"></a>
+<div id="divCommentShow"></div>
+<div id="comment_nav"><span id="span_refresh_tips"></span><a href="javascript:void(0);" onclick="return RefreshCommentList();" id="lnk_RefreshComments" runat="server" clientidmode="Static">刷新评论</a><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#" onclick="return RefreshPage();">刷新页面</a><a href="http://www.cnblogs.com/zhoujinyi/p/3437475.html#top">返回顶部</a></div>
+<div id="comment_form_container"><script type="text/javascript" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/mention.js"></script>
+<div id="commentform_title">发表评论</div>
+<span id="tip_comment" style="color:Red"></span>
+<p>
+昵称：<input type="text" id="tbCommentAuthor" class="author" disabled="disabled" size="50" value="鲸息">
+</p>
+<div class="commentbox_main">
+<div class="commentbox_title">
+<div class="commentbox_title_left">评论内容：</div>
+<div class="commentbox_title_right">
+<img id="ubb_quote" class="comment_icon" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/quote.gif" alt="引用" title="添加引用" onclick="insertUBB(&#39;tbCommentBody&#39;,&#39;quote&#39;)">
+<img id="ubb_bold" class="comment_icon" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/b.png" alt="粗体" title="添加粗体" onclick="insertUBB(&#39;tbCommentBody&#39;,&#39;b&#39;)">
+<img id="ubb_url" class="comment_icon" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/lk.png" alt="链接" title="添加链接" onclick="insertUbbUrl(&#39;tbCommentBody&#39;)">
+<img id="ubb_indent" class="comment_icon" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/indent.png" alt="缩进" title="添加首行缩进" onclick="insertIndent(&#39;tbCommentBody&#39;)">
+<img id="ubb_code" class="comment_icon" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/InsertCode.gif" alt="代码" title="添加代码" onclick="insertUbbCode()">
+<img id="ubb_img" class="comment_icon" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/img.gif" alt="图片" title="上传图片" onclick="OpenImageUploadWindow();">
+</div>
+</div>
+<div class="clear"></div>
+<textarea id="tbCommentBody" class="comment_textarea"></textarea>
+</div>
+<p id="commentbox_opt">
+<input id="btn_comment_submit" type="button" class="comment_btn" value="提交评论">
+<span id="span_comment_canceledit" style="display:none"><a href="javascript:void(0);" onclick="return CancelCommentEdit()">不改了</a></span>
+<a href="javascript:void(0);" onclick="return logout();">退出</a>
+        <a id="commentbox_opt_sub" href="javascript:void(0);" title="订阅后有新评论时会邮件通知您" onclick="commentManager.Subscribe()">订阅评论</a>
+</p>
+<div id="tip_comment2" style="color:Red"></div>
+<p>
+[Ctrl+Enter快捷键提交]
+</p>
+<div style="display:none">
+<span id="comment_edit_id"></span><span id="span_parentcomment_id"></span>
+<span id="span_parent_id"></span>
+<span id="span_comment_replyto"></span>
+<span id="span_comment_posted"></span>
+</div>
+</div>
+<div class="ad_text_commentbox" id="ad_text_under_commentbox"></div>
+<div id="ad_t2"><a href="http://www.ucancode.com/index.htm" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-工控&#39;)">【推荐】超50万C++/C#源码: 大型实时仿真组态图形源码</a><br><a href="https://ke.qq.com/adActivity.html?name=xiangxueketang2" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-享学&#39;)">【培训】IT职业生涯指南，Java程序员薪资翻3倍的秘密</a><br><a href="https://group.cnblogs.com/topic/81213.html" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-咕泡&#39;)">【推荐】工作996，生病ICU，程序员不加班就没前途吗？</a><br><a href="https://gitee.com/enterprises?from=bky-2" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-gitee&#39;)">【推荐】专业便捷的企业级代码托管服务 - Gitee 码云</a><br></div>
+<div id="opt_under_post"></div>
+<script async="async" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/gpt.js"></script>
+<script>
+  var googletag = googletag || {};
+  googletag.cmd = googletag.cmd || [];
+</script>
+<script>
+  googletag.cmd.push(function() {
+        googletag.defineSlot('/1090369/C1', [300, 250], 'div-gpt-ad-1546353474406-0').addService(googletag.pubads());
+        googletag.defineSlot('/1090369/C2', [468, 60], 'div-gpt-ad-1539008685004-0').addService(googletag.pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
+  });
+</script>
+<div id="cnblogs_c1" class="c_ad_block" style="">
+    <div id="div-gpt-ad-1546353474406-0" style="height: 250px; width: 300px;"><div id="google_ads_iframe_/1090369/C1_0__container__" style="border: 0pt none; width: 300px; height: 250px;"></div></div>
+</div>
+<div id="under_post_news"><div class="itnews c_ad_block"><b>相关博文：</b><br>·  <a href="https://www.cnblogs.com/kccdzz/p/8975924.html" target="_blank" onclick="clickRecomItmem(8975924)">MySQL的四种事务隔离级别</a><br>·  <a href="https://www.cnblogs.com/zrui-xyu/p/8921404.html" target="_blank" onclick="clickRecomItmem(8921404)">MySQL的四种事务隔离级别</a><br>·  <a href="https://www.cnblogs.com/huanongying/p/7021555.html" target="_blank" onclick="clickRecomItmem(7021555)">MySQL的四种事务隔离级别</a><br>·  <a href="https://www.cnblogs.com/geekdc/p/8665000.html" target="_blank" onclick="clickRecomItmem(8665000)">MySQL的四种事务隔离级别</a><br>·  <a href="https://www.cnblogs.com/moss_tan_jun/p/6022132.html" target="_blank" onclick="clickRecomItmem(6022132)">mysql四种事务隔离级的说明</a><br></div></div>
+<div id="cnblogs_c2" class="c_ad_block" style="">
+    <div id="div-gpt-ad-1539008685004-0" style="height: 60px; width: 468px;"><div id="google_ads_iframe_/1090369/C2_0__container__" style="border: 0pt none; width: 468px; height: 60px;"></div></div>
+</div>
+<div id="under_post_kb"><div class="itnews c_ad_block"><b>最新新闻</b>：<br> ·  <a href="https://news.cnblogs.com/n/624183/" target="_blank">电动自行车充电服务运营商「小绿人科技」完成亿元B轮融资，即将启动本地化服务</a><br> ·  <a href="https://news.cnblogs.com/n/624182/" target="_blank">一周三休？ 日本微软对员工作息制度进行探索</a><br> ·  <a href="https://news.cnblogs.com/n/624181/" target="_blank">中科大潘建伟团队刷新量子多体纠缠态纪录</a><br> ·  <a href="https://news.cnblogs.com/n/624180/" target="_blank">AI 的主打歌：程序员打得作曲家神不守舍</a><br> ·  <a href="https://news.cnblogs.com/n/624179/" target="_blank">最前线丨滴滴首次对外公布网约车平均抽成19%，新业务导致亏损压力变大</a><br>» <a href="http://news.cnblogs.com/" title="IT新闻" target="_blank">更多新闻...</a></div></div>
+<div id="HistoryToday" class="c_ad_block"></div>
+<script type="text/javascript">
+ if(enablePostBottom()) {
+    codeHighlight();
+    fixPostBody();
+    setTimeout(function () { incrementViewCount(cb_entryId); }, 50);
+    deliverT2();
+    deliverC1();
+    deliverC2();    
+    loadNewsAndKb();
+    loadBlogSignature();
+    LoadPostInfoBlock(cb_blogId, cb_entryId, cb_blogApp, cb_blogUserGuid);
+    GetPrevNextPost(cb_entryId, cb_blogId, cb_entryCreatedDate, cb_postType);
+    loadOptUnderPost();
+    GetHistoryToday(cb_blogId, cb_blogApp, cb_entryCreatedDate);  
+}
+</script>
+</div>
+
+    
+	</div><!--end: forFlow -->
+	</div><!--end: mainContent 主体内容容器-->
+
+	<div id="sideBar">
+		<div id="sideBarMain">
+			
+<!--done-->
+<div class="newsItem">
+<h3 class="catListTitle">公告</h3>
+	<div id="blog-news"><script type="text/javascript">window['__document_write_ajax_callbacks__']['4']();</script><script>window['__document_write_ajax_callbacks__']['1']();</script>
+	<script type="text/javascript">window['__document_write_ajax_callbacks__']['5']();</script><script type="text/javascript">window['__document_write_ajax_callbacks__']['6']();</script><script>window['__document_write_ajax_callbacks__']['2']();</script><div id="profile_block">昵称：<a href="https://home.cnblogs.com/u/zhoujinyi/">jyzhou</a><br>园龄：<a href="https://home.cnblogs.com/u/zhoujinyi/" title="入园时间：2010-10-08">8年6个月</a><br>粉丝：<a href="https://home.cnblogs.com/u/zhoujinyi/followers/">466</a><br>关注：<a href="https://home.cnblogs.com/u/zhoujinyi/followees/">14</a><div id="p_b_follow">已关注 <a href="javascript:void(0);" onclick="unfollow(&#39;b42b5097-a2d2-df11-ac81-842b2b196315&#39;)">-取消</a></div><script type="text/javascript">window['__document_write_ajax_callbacks__']['7']();</script><script>window['__document_write_ajax_callbacks__']['3']();</script></div></div><script type="text/javascript">loadBlogNews();</script>
+</div>
+
+			<div id="blog-calendar" style=""><table id="blogCalendar" class="Cal" cellspacing="0" cellpadding="0" title="Calendar">
+	<tbody><tr><td colspan="7"><table class="CalTitle" cellspacing="0">
+		<tbody><tr><td class="CalNextPrev"><a href="javascript:void(0);" onclick="loadBlogCalendar(&#39;2019/03/01&#39;);return false;">&lt;</a></td><td align="center">2019年4月</td><td class="CalNextPrev" align="right"><a href="javascript:void(0);" onclick="loadBlogCalendar(&#39;2019/05/01&#39;);return false;">&gt;</a></td></tr>
+	</tbody></table></td></tr><tr><th class="CalDayHeader" align="center" abbr="日" scope="col">日</th><th class="CalDayHeader" align="center" abbr="一" scope="col">一</th><th class="CalDayHeader" align="center" abbr="二" scope="col">二</th><th class="CalDayHeader" align="center" abbr="三" scope="col">三</th><th class="CalDayHeader" align="center" abbr="四" scope="col">四</th><th class="CalDayHeader" align="center" abbr="五" scope="col">五</th><th class="CalDayHeader" align="center" abbr="六" scope="col">六</th></tr><tr><td class="CalOtherMonthDay" align="center">31</td><td align="center">1</td><td align="center">2</td><td align="center">3</td><td align="center">4</td><td align="center">5</td><td class="CalWeekendDay" align="center">6</td></tr><tr><td class="CalWeekendDay" align="center">7</td><td align="center">8</td><td align="center">9</td><td align="center">10</td><td align="center">11</td><td align="center">12</td><td class="CalWeekendDay" align="center">13</td></tr><tr><td class="CalWeekendDay" align="center">14</td><td align="center">15</td><td align="center">16</td><td align="center">17</td><td align="center">18</td><td align="center">19</td><td class="CalWeekendDay" align="center">20</td></tr><tr><td class="CalWeekendDay" align="center">21</td><td class="CalTodayDay" align="center">22</td><td align="center">23</td><td align="center">24</td><td align="center">25</td><td align="center">26</td><td class="CalWeekendDay" align="center">27</td></tr><tr><td class="CalWeekendDay" align="center">28</td><td align="center">29</td><td align="center">30</td><td class="CalOtherMonthDay" align="center">1</td><td class="CalOtherMonthDay" align="center">2</td><td class="CalOtherMonthDay" align="center">3</td><td class="CalOtherMonthDay" align="center">4</td></tr><tr><td class="CalOtherMonthDay" align="center">5</td><td class="CalOtherMonthDay" align="center">6</td><td class="CalOtherMonthDay" align="center">7</td><td class="CalOtherMonthDay" align="center">8</td><td class="CalOtherMonthDay" align="center">9</td><td class="CalOtherMonthDay" align="center">10</td><td class="CalOtherMonthDay" align="center">11</td></tr>
+</tbody></table></div><script type="text/javascript">loadBlogDefaultCalendar();</script>
+			
+			<div id="leftcontentcontainer">
+				<div id="blog-sidecolumn"><div id="sidebar_search" class="sidebar-block">
+<div id="sidebar_search" class="mySearch">
+<h3 class="catListTitle">搜索</h3>
+<div id="sidebar_search_box">
+<div id="widget_my_zzk" class="div_my_zzk"><input type="text" id="q" onkeydown="return zzk_go_enter(event);" class="input_my_zzk">&nbsp;<input onclick="zzk_go()" type="button" value="找找看" id="btnZzk" class="btn_my_zzk"></div>
+<div id="widget_my_google" class="div_my_zzk"><input type="text" name="google_q" id="google_q" onkeydown="return google_go_enter(event)" class="input_my_zzk">&nbsp;<input onclick="google_go()" type="button" value="谷歌搜索" class="btn_my_zzk"></div>
+</div>
+</div>
+
+</div><div id="sidebar_shortcut" class="sidebar-block">
+<div class="catListLink">
+<h3 class="catListTitle">常用链接</h3>
+<ul>
+<li><a href="https://www.cnblogs.com/zhoujinyi/p/" title="我的博客的随笔列表">我的随笔</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/MyComments.html" title="我发表过的评论列表">我的评论</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/OtherPosts.html" title="我评论过的随笔列表">我的参与</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/RecentComments.html" title="我的博客的评论列表">最新评论</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/" title="我的博客的标签列表">我的标签</a></li>
+</ul>
+<div id="itemListLin_con" style="display:none;">
+<ul>
+
+</ul>
+</div>
+</div></div><div id="sidebar_recentposts" class="sidebar-block">
+<div class="catListEssay">
+<h3 class="catListTitle">最新随笔</h3>
+<ul>
+<li><a href="https://www.cnblogs.com/zhoujinyi/p/10394389.html">1. MySQL高可用复制管理工具 —— Orchestrator使用</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/10387581.html">2. MySQL高可用复制管理工具 —— Orchestrator介绍</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/9950105.html">3. 使用codis-admin搭建codis集群</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/9925508.html">4. percona-toolkit 之 【pt-archiver】</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/9249873.html">5. Redis Codis 部署安装</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/9187421.html">6. MySQL在线DDL gh-ost 使用说明</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/9187502.html">7. GitHub 开源的 MySQL 在线更改 Schema 工具【转】</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/8035413.html">8. MySQL slave_exec_mode 参数说明</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/7403210.html">9. XtraBackup应用说明（支持TokuDB）</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/6924982.html">10. MySQL ProxySQL相关维护说明</a></li>
+</ul>
+</div>
+</div><div id="sidebar_toptags" class="sidebar-block">
+<div class="catListTag">
+<h3 class="catListTitle">我的标签</h3>
+<ul>
+<li><a href="https://www.cnblogs.com/zhoujinyi/tag/backup/">backup</a>(8)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/redis/">redis</a>(7)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/replication/">replication</a>(6)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/mysql5.6/">mysql5.6</a>(4)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/mysql5.7/">mysql5.7</a>(4)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/mysqldump/">mysqldump</a>(4)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/sentinel/">sentinel</a>(4)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/xtrabackup/">xtrabackup</a>(4)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/">读写分离</a>(4)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/5.6/">5.6</a>(4)</li><li><a href="https://www.cnblogs.com/zhoujinyi/tag/">更多</a></li>
+</ul>
+</div></div><div id="sidebar_categories">
+<div id="sidebar_postcategory" class="catListPostCategory sidebar-block">
+<h3 class="catListTitle">随笔分类<span style="font-size:11px;font-weight:normal">(300)</span></h3>
+
+<ul>
+
+<li><a id="CatList_LinkList_0_Link_0" href="https://www.cnblogs.com/zhoujinyi/category/421068.html">Linux(11)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_1" href="https://www.cnblogs.com/zhoujinyi/category/421066.html">MySQL(117)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_2" href="https://www.cnblogs.com/zhoujinyi/category/472730.html">NoSQL(30)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_3" href="https://www.cnblogs.com/zhoujinyi/category/421067.html">Python(23)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_4" href="https://www.cnblogs.com/zhoujinyi/category/421069.html">Tool(27)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_5" href="https://www.cnblogs.com/zhoujinyi/category/428737.html">Web(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_6" href="https://www.cnblogs.com/zhoujinyi/category/414098.html">随笔(43)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_7" href="https://www.cnblogs.com/zhoujinyi/category/423289.html">转载区(46)</a> </li>
+
+</ul>
+
+</div>
+
+<div id="sidebar_postarchive" class="catListPostArchive sidebar-block">
+<h3 class="catListTitle">随笔档案<span style="font-size:11px;font-weight:normal">(162)</span></h3>
+
+<ul>
+
+<li><a id="CatList_LinkList_1_Link_0" href="https://www.cnblogs.com/zhoujinyi/archive/2019/02.html">2019年2月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_1" href="https://www.cnblogs.com/zhoujinyi/archive/2018/11.html">2018年11月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_2" href="https://www.cnblogs.com/zhoujinyi/archive/2018/07.html">2018年7月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_3" href="https://www.cnblogs.com/zhoujinyi/archive/2018/06.html">2018年6月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_4" href="https://www.cnblogs.com/zhoujinyi/archive/2017/12.html">2017年12月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_5" href="https://www.cnblogs.com/zhoujinyi/archive/2017/08.html">2017年8月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_6" href="https://www.cnblogs.com/zhoujinyi/archive/2017/05.html">2017年5月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_7" href="https://www.cnblogs.com/zhoujinyi/archive/2017/04.html">2017年4月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_8" href="https://www.cnblogs.com/zhoujinyi/archive/2017/03.html">2017年3月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_9" href="https://www.cnblogs.com/zhoujinyi/archive/2017/02.html">2017年2月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_10" href="https://www.cnblogs.com/zhoujinyi/archive/2016/12.html">2016年12月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_11" href="https://www.cnblogs.com/zhoujinyi/archive/2016/11.html">2016年11月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_12" href="https://www.cnblogs.com/zhoujinyi/archive/2016/09.html">2016年9月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_13" href="https://www.cnblogs.com/zhoujinyi/archive/2016/08.html">2016年8月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_14" href="https://www.cnblogs.com/zhoujinyi/archive/2016/07.html">2016年7月 (5)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_15" href="https://www.cnblogs.com/zhoujinyi/archive/2016/06.html">2016年6月 (6)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_16" href="https://www.cnblogs.com/zhoujinyi/archive/2016/04.html">2016年4月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_17" href="https://www.cnblogs.com/zhoujinyi/archive/2016/03.html">2016年3月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_18" href="https://www.cnblogs.com/zhoujinyi/archive/2016/02.html">2016年2月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_19" href="https://www.cnblogs.com/zhoujinyi/archive/2015/11.html">2015年11月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_20" href="https://www.cnblogs.com/zhoujinyi/archive/2015/09.html">2015年9月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_21" href="https://www.cnblogs.com/zhoujinyi/archive/2015/08.html">2015年8月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_22" href="https://www.cnblogs.com/zhoujinyi/archive/2015/07.html">2015年7月 (7)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_23" href="https://www.cnblogs.com/zhoujinyi/archive/2015/06.html">2015年6月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_24" href="https://www.cnblogs.com/zhoujinyi/archive/2015/05.html">2015年5月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_25" href="https://www.cnblogs.com/zhoujinyi/archive/2015/03.html">2015年3月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_26" href="https://www.cnblogs.com/zhoujinyi/archive/2015/02.html">2015年2月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_27" href="https://www.cnblogs.com/zhoujinyi/archive/2014/12.html">2014年12月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_28" href="https://www.cnblogs.com/zhoujinyi/archive/2014/11.html">2014年11月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_29" href="https://www.cnblogs.com/zhoujinyi/archive/2014/10.html">2014年10月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_30" href="https://www.cnblogs.com/zhoujinyi/archive/2014/06.html">2014年6月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_31" href="https://www.cnblogs.com/zhoujinyi/archive/2014/03.html">2014年3月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_32" href="https://www.cnblogs.com/zhoujinyi/archive/2014/02.html">2014年2月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_33" href="https://www.cnblogs.com/zhoujinyi/archive/2013/12.html">2013年12月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_34" href="https://www.cnblogs.com/zhoujinyi/archive/2013/11.html">2013年11月 (7)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_35" href="https://www.cnblogs.com/zhoujinyi/archive/2013/10.html">2013年10月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_36" href="https://www.cnblogs.com/zhoujinyi/archive/2013/09.html">2013年9月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_37" href="https://www.cnblogs.com/zhoujinyi/archive/2013/08.html">2013年8月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_38" href="https://www.cnblogs.com/zhoujinyi/archive/2013/07.html">2013年7月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_39" href="https://www.cnblogs.com/zhoujinyi/archive/2013/06.html">2013年6月 (7)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_40" href="https://www.cnblogs.com/zhoujinyi/archive/2013/05.html">2013年5月 (15)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_41" href="https://www.cnblogs.com/zhoujinyi/archive/2013/04.html">2013年4月 (15)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_42" href="https://www.cnblogs.com/zhoujinyi/archive/2013/03.html">2013年3月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_43" href="https://www.cnblogs.com/zhoujinyi/archive/2013/01.html">2013年1月 (6)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_44" href="https://www.cnblogs.com/zhoujinyi/archive/2012/12.html">2012年12月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_45" href="https://www.cnblogs.com/zhoujinyi/archive/2012/11.html">2012年11月 (5)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_46" href="https://www.cnblogs.com/zhoujinyi/archive/2012/10.html">2012年10月 (7)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_47" href="https://www.cnblogs.com/zhoujinyi/archive/2012/09.html">2012年9月 (3)</a> </li>
+
+</ul>
+
+</div>
+
+<div id="sidebar_articlecategory" class="catListArticleCategory sidebar-block">
+<h3 class="catListTitle">文章分类</h3>
+
+<ul>
+
+<li><a id="CatList_LinkList_2_Link_0" href="https://www.cnblogs.com/zhoujinyi/category/419042.html">Linux</a> </li>
+
+<li><a id="CatList_LinkList_2_Link_1" href="https://www.cnblogs.com/zhoujinyi/category/419041.html">MySQL</a> </li>
+
+<li><a id="CatList_LinkList_2_Link_2" href="https://www.cnblogs.com/zhoujinyi/category/419043.html">Python</a> </li>
+
+<li><a id="CatList_LinkList_2_Link_3" href="https://www.cnblogs.com/zhoujinyi/category/419044.html">Tool</a> </li>
+
+</ul>
+
+</div>
+
+</div><div id="sidebar_scorerank" class="sidebar-block">
+<div class="catListBlogRank">
+<h3 class="catListTitle">积分与排名</h3>
+<ul>
+	<li class="liScore">
+		积分 -	343769
+	</li>
+	<li class="liRank">
+		排名 -	695
+	</li>
+</ul>
+</div>
+
+
+</div><div id="sidebar_recentcomments" class="sidebar-block"><div id="recent_comments_wrap">
+<div class="catListComment">
+<h3 class="catListTitle">最新评论</h3>
+
+	<div id="RecentCommentsBlock"><ul>
+        <li class="recent_comment_title"><a href="https://www.cnblogs.com/zhoujinyi/p/5888271.html#4211743">1. Re:Percona XtraBackup 备份原理说明【转】</a></li>
+        <li class="recent_comment_body">非常清晰，赞</li>
+        <li class="recent_comment_author">--DreamDZhu</li>
+        <li class="recent_comment_title"><a href="https://www.cnblogs.com/zhoujinyi/p/10394389.html#4194409">2. Re:MySQL高可用复制管理工具 —— Orchestrator使用</a></li>
+        <li class="recent_comment_body">我这边测试orchestrator设置了账号密码，使用orchestrator-client时，一直提示ORCHESTRATOR_API设置的有问题，但是的确有设置：export ORCHESTRAT......</li>
+        <li class="recent_comment_author">--Lvanhades666</li>
+        <li class="recent_comment_title"><a href="https://www.cnblogs.com/zhoujinyi/p/9925508.html#4189348">3. Re:percona-toolkit 之 【pt-archiver】</a></li>
+        <li class="recent_comment_body">除了来源和目标的连接信息之外，还添加了以下参数：--progress 1000 --where "request_time&lt;'"${expiredate}"'" --statistics --char......</li>
+        <li class="recent_comment_author">--止獨</li>
+        <li class="recent_comment_title"><a href="https://www.cnblogs.com/zhoujinyi/p/10387581.html#4189089">4. Re:MySQL高可用复制管理工具 —— Orchestrator介绍</a></li>
+        <li class="recent_comment_body">方便加个联系方式吗，例如qq</li>
+        <li class="recent_comment_author">--xiaohuazi</li>
+        <li class="recent_comment_title"><a href="https://www.cnblogs.com/zhoujinyi/p/10387581.html#4188932">5. Re:MySQL高可用复制管理工具 —— Orchestrator介绍</a></li>
+        <li class="recent_comment_body">@xiaohuazi稳定，遇到直接翻墙找作者。MGR和这个不是同一个概念，应该拿这个和MHA比比较合适。...</li>
+        <li class="recent_comment_author">--jyzhou</li>
+</ul>
+</div>
+</div>
+</div></div><div id="sidebar_topviewedposts" class="sidebar-block"><div id="topview_posts_wrap">
+<div class="catListView">
+<h3 class="catListTitle">阅读排行榜</h3>
+	<div id="TopViewPostsBlock"><ul><li><a href="https://www.cnblogs.com/zhoujinyi/p/3437475.html">1. MySQL 四种事务隔离级的说明(78034)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/4610050.html">2. MongoDB 3.0 用户创建(63692)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/6073705.html">3. 进程管理supervisor的简单说明(63583)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/archive/2013/04/26/3043160.html">4. MySQL 数据类型（float）的注意事项(43990)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/5569462.html">5. Redis Sentinel机制与用法说明【转】(35858)</a></li></ul></div>
+</div>
+</div></div><div id="sidebar_topcommentedposts" class="sidebar-block"><div id="topfeedback_posts_wrap">
+<div class="catListFeedback">
+<h3 class="catListTitle">评论排行榜</h3>
+	<div id="TopFeedbackPostsBlock"><ul><li><a href="https://www.cnblogs.com/zhoujinyi/p/3435982.html">1. Innodb锁机制：Next-Key Lock 浅谈(21)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/3437475.html">2. MySQL 四种事务隔离级的说明(15)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/4635444.html">3. MongoDB 分片的原理、搭建、应用(11)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/10387581.html">4. MySQL高可用复制管理工具 —— Orchestrator介绍(10)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/5704567.html">5. MySQL 5.7 Replication 相关新功能说明(7)</a></li></ul></div>
+</div>
+</div></div><div id="sidebar_topdiggedposts" class="sidebar-block"><div id="topdigg_posts_wrap">
+<div class="catListView">
+<h3 class="catListTitle">推荐排行榜</h3>
+<div id="TopDiggPostsBlock"><ul><li><a href="https://www.cnblogs.com/zhoujinyi/p/3437475.html">1. MySQL 四种事务隔离级的说明(15)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/5554083.html">2. Memcache 内存分配策略和性能(使用)状态检查(13)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/4635444.html">3. MongoDB 分片的原理、搭建、应用(13)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/6073705.html">4. 进程管理supervisor的简单说明(9)</a></li><li><a href="https://www.cnblogs.com/zhoujinyi/p/4610050.html">5. MongoDB 3.0 用户创建(8)</a></li></ul></div>
+</div></div></div></div><script type="text/javascript">loadBlogSideColumn();</script>
+			</div>
+			
+		</div><!--end: sideBarMain -->
+	</div><!--end: sideBar 侧边栏容器 -->
+	<div class="clear"></div>
+	</div><!--end: main -->
+	<div class="clear"></div>
+	<div id="footer">
+		
+<!--done-->
+Copyright ©2019 jyzhou
+	</div><!--end: footer -->
+</div><!--end: home 自定义的最大容器 -->
+
+
+
+<script type="text/javascript">
+	window.tctipConfig = {
+			staticPrefix:   "http://static.tctip.com",
+			buttonImageId:  1,
+			buttonTip:	"dashang",
+			list:{
+		 		alipay: {qrimg: "http://img.dxycdn.com/upload/2016/06/18/28/69588192.png"},
+		 		weixin:{qrimg: "http://www.ideaimages.cn/wp-content/uploads/2016/61752431.png"},
+			}
+	};
+	</script><link type="text/css" rel="stylesheet" href="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/myRewards.css"><div id="myRewards" class="myRewards"><a class="btn-myRewards" href="javascript:;"><img class="png" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/tab_1.png"></a><div class="myRewards-main"><h1 class="myR-h">喜欢请打赏</h1><div class="myRewardsbox"><div class="myRewards-list"><ul class="not-full"><li class="myR-on"><a href="javascript:;">支付宝<img class="png" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/alipay.png" alt="支付宝"></a></li><li class=""><a href="javascript:;">微信<img class="png" src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/weixin.png" alt="微信"></a></li></ul></div><div class="myRewards-detail"><div class="myRewards-ubox"><p class="myRewards-code-tit">扫描二维码打赏</p><div class="myRewards-code"><img src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/69588192.png"></div><p class="myRewards-account">支付宝打赏</p></div></div></div><p class="myR-bot"><a href="https://github.com/greedying/tctip" target="_blank">了解更多</a></p></div></div><script src="./MySQL 四种事务隔离级的说明 - jyzhou - 博客园_files/index"></script><script type="text/javascript">getFollowStatus('b42b5097-a2d2-df11-ac81-842b2b196315')</script></body><div id="cye-workaround-body" style="position: absolute; left: 0px; top: 0px; z-index: -2147483646; background: none 0% 0% / auto repeat scroll padding-box border-box rgb(255, 255, 255); height: 13597px; width: 990px;"></div><div id="cye-workaround-body-image" style="position: absolute; left: 0px; top: 0px; z-index: -2147483645; background: none 0% 0% / auto repeat scroll padding-box border-box rgba(0, 0, 0, 0); height: 13597px; width: 990px;"></div></html>

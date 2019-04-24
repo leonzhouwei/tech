@@ -1,0 +1,1254 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- saved from url=(0063)http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html -->
+<html><head id="Head"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>
+	ClassNotFoundException和NoClassDefError之间的区别 -  - BlogJava
+</title><meta id="metaKeywords" name="keywords" content="ClassNotFoundException和NoClassDefError之间的区别"><meta name="adbit-site-verification" content="67736285a6806bcbb1a0aa771b8048d6f24683974e9c1481e36cf1b6ebc6035b"><link type="text/css" rel="stylesheet" href="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/common.css"><link id="MainCss" type="text/css" rel="stylesheet" href="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/style.css"><link id="RSSLink" title="RSS" type="application/rss+xml" rel="alternate" href="http://www.blogjava.net/leekiang/rss.aspx"><link rel="preload" href="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/f(1).txt" as="script"><script src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/f.txt"></script><script src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/pubads_impl_rendering_238.js"></script><script type="text/javascript" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/f(1).txt"></script><script src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/pubads_impl_238.js" async=""></script><style></style><link rel="prefetch" href="http://tpc.googlesyndication.com/safeframe/1-0-29/html/container.html"></head>
+<body>
+    <form name="Form1" method="post" action="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html" id="Form1">
+<div>
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="">
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="">
+<input type="hidden" name="__VIEWSTATE" id="
+__VIEWSTATE" value="">
+</div>
+
+<script type="text/javascript" async="" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/ga.js"></script><script async="" type="text/javascript" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/gpt.js"></script><script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['Form1'];
+if (!theForm) {
+    theForm = document.Form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/WebResource.axd" type="text/javascript"></script>
+
+<script language="JavaScript">
+									function ctlent(evt,id)
+											{
+												if(evt.ctrlKey && evt.keyCode == 13)
+												{	
+													try
+													{
+														TempSave(id);
+													}
+													catch(ex)
+													{
+													}
+													finally
+													{
+													    __doPostBack('AjaxHolder$PostComment$btnSubmit','')
+													}
+												}
+		
+												}</script>
+												<script language="JavaScript">function SetReplyAuhor(author){document.getElementById('AjaxHolder_PostComment_tbComment').value+="@"+author+"\n";document.getElementById('AjaxHolder_PostComment_tbComment').focus();return false}</script>
+<script src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/ScriptResource.axd" type="text/javascript"></script>
+<script src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/ScriptResource(1).axd" type="text/javascript"></script>
+        <iframe data-aa="240603" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/240603.html" scrolling="no" style="width:120px; height:60px; border:0px; padding:0;overflow:hidden" allowtransparency="true" frameborder="0"></iframe>
+<iframe data-aa="240495" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/240495.html" scrolling="no" style="width:468px; height:60px; border:0px; padding:0;overflow:hidden" allowtransparency="true" frameborder="0"></iframe>
+
+
+<script type="text/javascript" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/918017"></script>
+
+<div class="adbit-display-ad" data-adspace-id="192C9AFEAE"></div>
+
+<iframe src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/new_code_site21124.html" scrolling="no" frameborder="0" width="468px" height="90px"></iframe>
+<a href="http://faucethub.io/r/16558951"><img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/5.gif"></a>
+
+
+<table class="Framework" cellspacing="0" cellpadding="0" width="100%">
+	<tbody><tr>
+		<td colspan="3">
+			
+<div id="top">
+<table cellpadding="10" cellspacing="0">
+	<tbody><tr>
+		<td nowrap="">
+			<h1><a id="Header1_HeaderTitle" class="headermaintitle" href="http://www.blogjava.net/leekiang/"></a></h1>
+			MDA/MDD/TDD/DDD/DDDDDDD
+		</td>
+	</tr>
+</tbody></table>
+</div>
+<div id="sub">
+	<div id="sub-right">
+<div class="BlogStats">posts - 536, comments - 111, trackbacks - 0, articles - 0</div></div>
+	
+&nbsp;
+<a id="Header1_MyLinks1_HomeLink" href="http://www.blogjava.net/">BlogJava</a>&nbsp;::
+<a id="Header1_MyLinks1_MyHomeLink" href="http://www.blogjava.net/leekiang/">首页</a>&nbsp;::
+<a id="Header1_MyLinks1_NewPostLink" href="http://www.blogjava.net/leekiang/admin/EditPosts.aspx?opt=1">新随笔</a>&nbsp;::
+<a id="Header1_MyLinks1_ContactLink" accesskey="9" href="http://www.blogjava.net/leekiang/contact.aspx?id=1">联系</a>&nbsp;::
+<a id="Header1_MyLinks1_Syndication" href="http://www.blogjava.net/leekiang/rss">聚合</a>
+<a id="Header1_MyLinks1_XMLLink" class="XMLLink" href="http://www.blogjava.net/leekiang/rss"><img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xml.gif" style="border-width:0px;"></a>&nbsp;::
+<a id="Header1_MyLinks1_Admin" href="http://www.blogjava.net/leekiang/admin/EditPosts.aspx">管理</a>
+
+</div>
+		</td>
+	</tr>
+	<tr>
+		<td class="LeftCell">
+			<div id="leftmenu">
+	
+		
+		
+<div id="cell">
+<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>公告</h3>
+	一些零碎的笔记，希望能对你有用处。<br>
+<iframe data-aa="240603" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/240603(1).html" scrolling="no" style="width:120px; height:60px; border:0px; padding:0;overflow:hidden" allowtransparency="true" frameborder="0"></iframe><br>
+<br>
+<div class="adbit-display-ad" data-adspace-id="EB3EE8D9EC"></div>
+</div>
+
+	
+	
+	
+<div id="cell">
+<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2">
+<h3>常用链接</h3>
+<ul>
+		<li><a id="Singlecolumn2_ctl00_repeaterLinks_ctl01_lnkLinkItem" href="http://www.blogjava.net/leekiang/MyPosts.html">我的随笔</a></li>
+	
+		<li><a id="Singlecolumn2_ctl00_repeaterLinks_ctl02_lnkLinkItem" href="http://www.blogjava.net/leekiang/MyComments.html">我的评论</a></li>
+	
+		<li><a id="Singlecolumn2_ctl00_repeaterLinks_ctl03_lnkLinkItem" href="http://www.blogjava.net/leekiang/OtherPosts.html">我的参与</a></li>
+	
+		<li><a id="Singlecolumn2_ctl00_repeaterLinks_ctl04_lnkLinkItem" href="http://www.blogjava.net/leekiang/RecentComments.html">最新评论</a></li>
+	</ul>
+</div>
+<div id="cell">
+<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>留言簿<span style="font-size:11px;font-weight:normal;">(15)</span></h3>
+<ul>
+	<li>
+		<a id="Singlecolumn2__11ca9679f83e_lnkMessages" href="http://www.blogjava.net/leekiang/Contact.aspx?id=1">给我留言</a>
+	</li><li>
+		<a id="Singlecolumn2__11ca9679f83e_lnkPublicMsgView" href="http://www.blogjava.net/leekiang/default.aspx?opt=msg">查看公开留言</a>
+	</li><li>
+		<a id="Singlecolumn2__11ca9679f83e_lnkPrivateMsgView" href="http://www.blogjava.net/leekiang/admin/MyMessages.aspx">查看私人留言</a>
+	</li>
+</ul>
+</div>
+
+		<div id="cell">
+		<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>随笔分类<span style="font-size:11px;font-weight:normal">(572)</span></h3>
+		
+				<ul>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl01_RssLink" title="Subscribe to android(10)" href="http://www.blogjava.net/leekiang/category/43938.html/rss"><img title="Subscribe to android(10)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl01_Link" href="http://www.blogjava.net/leekiang/category/43938.html">android(10)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl02_RssLink" title="Subscribe to BI(1)" href="http://www.blogjava.net/leekiang/category/45000.html/rss"><img title="Subscribe to BI(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl02_Link" href="http://www.blogjava.net/leekiang/category/45000.html">BI(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl03_RssLink" title="Subscribe to commons(5)" href="http://www.blogjava.net/leekiang/category/27953.html/rss"><img title="Subscribe to commons(5)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl03_Link" href="http://www.blogjava.net/leekiang/category/27953.html">commons(5)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl04_RssLink" title="Subscribe to DDD(1)" href="http://www.blogjava.net/leekiang/category/37369.html/rss"><img title="Subscribe to DDD(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl04_Link" href="http://www.blogjava.net/leekiang/category/37369.html">DDD(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl05_RssLink" title="Subscribe to dwr(1)" href="http://www.blogjava.net/leekiang/category/27285.html/rss"><img title="Subscribe to dwr(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl05_Link" href="http://www.blogjava.net/leekiang/category/27285.html">dwr(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl06_RssLink" title="Subscribe to eclipse netbeans(10)" href="http://www.blogjava.net/leekiang/category/21758.html/rss"><img title="Subscribe to eclipse netbeans(10)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl06_Link" href="http://www.blogjava.net/leekiang/category/21758.html">eclipse netbeans(10)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl07_RssLink" title="Subscribe to ERP,EAM,CRM(5)" href="http://www.blogjava.net/leekiang/category/24529.html/rss"><img title="Subscribe to ERP,EAM,CRM(5)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl07_Link" href="http://www.blogjava.net/leekiang/category/24529.html">ERP,EAM,CRM(5)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl08_RssLink" title="Subscribe to ext(3)" href="http://www.blogjava.net/leekiang/category/22434.html/rss"><img title="Subscribe to ext(3)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl08_Link" href="http://www.blogjava.net/leekiang/category/22434.html">ext(3)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl09_RssLink" title="Subscribe to extremetable(3)" href="http://www.blogjava.net/leekiang/category/24430.html/rss"><img title="Subscribe to extremetable(3)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl09_Link" href="http://www.blogjava.net/leekiang/category/24430.html">extremetable(3)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl10_RssLink" title="Subscribe to fileupload(4)" href="http://www.blogjava.net/leekiang/category/25298.html/rss"><img title="Subscribe to fileupload(4)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl10_Link" href="http://www.blogjava.net/leekiang/category/25298.html">fileupload(4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl11_RssLink" title="Subscribe to firefox(4)" href="http://www.blogjava.net/leekiang/category/26794.html/rss"><img title="Subscribe to firefox(4)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl11_Link" href="http://www.blogjava.net/leekiang/category/26794.html">firefox(4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl12_RssLink" title="Subscribe to flex(1)" href="http://www.blogjava.net/leekiang/category/30140.html/rss"><img title="Subscribe to flex(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl12_Link" href="http://www.blogjava.net/leekiang/category/30140.html">flex(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl13_RssLink" title="Subscribe to ftp,http,tcp,udp等(6)" href="http://www.blogjava.net/leekiang/category/34853.html/rss"><img title="Subscribe to ftp,http,tcp,udp等(6)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl13_Link" href="http://www.blogjava.net/leekiang/category/34853.html">ftp,http,tcp,udp等(6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl14_RssLink" title="Subscribe to gis(2)" href="http://www.blogjava.net/leekiang/category/21759.html/rss"><img title="Subscribe to gis(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl14_Link" href="http://www.blogjava.net/leekiang/category/21759.html">gis(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl15_RssLink" title="Subscribe to grails(6)" href="http://www.blogjava.net/leekiang/category/38341.html/rss"><img title="Subscribe to grails(6)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl15_Link" href="http://www.blogjava.net/leekiang/category/38341.html">grails(6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl16_RssLink" title="Subscribe to hibernate(14)" href="http://www.blogjava.net/leekiang/category/22103.html/rss"><img title="Subscribe to hibernate(14)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl16_Link" href="http://www.blogjava.net/leekiang/category/22103.html">hibernate(14)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl17_RssLink" title="Subscribe to HR OA(1)" href="http://www.blogjava.net/leekiang/category/25022.html/rss"><img title="Subscribe to HR OA(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl17_Link" href="http://www.blogjava.net/leekiang/category/25022.html">HR OA(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl18_RssLink" title="Subscribe to ibatis(2)" href="http://www.blogjava.net/leekiang/category/48076.html/rss"><img title="Subscribe to ibatis(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl18_Link" href="http://www.blogjava.net/leekiang/category/48076.html">ibatis(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl19_RssLink" title="Subscribe to io,tcp(5)" href="http://www.blogjava.net/leekiang/category/34765.html/rss"><img title="Subscribe to io,tcp(5)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl19_Link" href="http://www.blogjava.net/leekiang/category/34765.html">io,tcp(5)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl20_RssLink" title="Subscribe to JasperReports(2)" href="http://www.blogjava.net/leekiang/category/21271.html/rss"><img title="Subscribe to JasperReports(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl20_Link" href="http://www.blogjava.net/leekiang/category/21271.html">JasperReports(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl21_RssLink" title="Subscribe to java(63)" href="http://www.blogjava.net/leekiang/category/21757.html/rss"><img title="Subscribe to java(63)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl21_Link" href="http://www.blogjava.net/leekiang/category/21757.html">java(63)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl22_RssLink" title="Subscribe to JCR(内容仓库)(2)" href="http://www.blogjava.net/leekiang/category/29317.html/rss"><img title="Subscribe to JCR(内容仓库)(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl22_Link" href="http://www.blogjava.net/leekiang/category/29317.html">JCR(内容仓库)(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl23_RssLink" title="Subscribe to jdbc、事务、并发(15)" href="http://www.blogjava.net/leekiang/category/32578.html/rss"><img title="Subscribe to jdbc、事务、并发(15)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl23_Link" href="http://www.blogjava.net/leekiang/category/32578.html">jdbc、事务、并发(15)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl24_RssLink" title="Subscribe to jfreechart(cewolf)(2)" href="http://www.blogjava.net/leekiang/category/29339.html/rss"><img title="Subscribe to jfreechart(cewolf)(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl24_Link" href="http://www.blogjava.net/leekiang/category/29339.html">jfreechart(cewolf)(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl25_RssLink" title="Subscribe to JMS(1)" href="http://www.blogjava.net/leekiang/category/29504.html/rss"><img title="Subscribe to JMS(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl25_Link" href="http://www.blogjava.net/leekiang/category/29504.html">JMS(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl26_RssLink" title="Subscribe to jquery(进去而已)(20)" href="http://www.blogjava.net/leekiang/category/29462.html/rss"><img title="Subscribe to jquery(进去而已)(20)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl26_Link" href="http://www.blogjava.net/leekiang/category/29462.html">jquery(进去而已)(20)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl27_RssLink" title="Subscribe to jsp,servlet(9)" href="http://www.blogjava.net/leekiang/category/30248.html/rss"><img title="Subscribe to jsp,servlet(9)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl27_Link" href="http://www.blogjava.net/leekiang/category/30248.html">jsp,servlet(9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl28_RssLink" title="Subscribe to LINUX,UNIX(25)" href="http://www.blogjava.net/leekiang/category/24446.html/rss"><img title="Subscribe to LINUX,UNIX(25)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl28_Link" href="http://www.blogjava.net/leekiang/category/24446.html">LINUX,UNIX(25)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl29_RssLink" title="Subscribe to lucene(9)" href="http://www.blogjava.net/leekiang/category/29476.html/rss"><img title="Subscribe to lucene(9)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl29_Link" href="http://www.blogjava.net/leekiang/category/29476.html">lucene(9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl30_RssLink" title="Subscribe to maximo(4)" href="http://www.blogjava.net/leekiang/category/21272.html/rss"><img title="Subscribe to maximo(4)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl30_Link" href="http://www.blogjava.net/leekiang/category/21272.html">maximo(4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl31_RssLink" title="Subscribe to mysql(10)" href="http://www.blogjava.net/leekiang/category/34735.html/rss"><img title="Subscribe to mysql(10)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl31_Link" href="http://www.blogjava.net/leekiang/category/34735.html">mysql(10)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl32_RssLink" title="Subscribe to nosql(1)" href="http://www.blogjava.net/leekiang/category/47961.html/rss"><img title="Subscribe to nosql(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl32_Link" href="http://www.blogjava.net/leekiang/category/47961.html">nosql(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl33_RssLink" title="Subscribe to oracle(30)" href="http://www.blogjava.net/leekiang/category/21129.html/rss"><img title="Subscribe to oracle(30)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl33_Link" href="http://www.blogjava.net/leekiang/category/21129.html">oracle(30)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl34_RssLink" title="Subscribe to php(5)" href="http://www.blogjava.net/leekiang/category/33882.html/rss"><img title="Subscribe to php(5)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl34_Link" href="http://www.blogjava.net/leekiang/category/33882.html">php(5)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl35_RssLink" title="Subscribe to portal(2)" href="http://www.blogjava.net/leekiang/category/29829.html/rss"><img title="Subscribe to portal(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl35_Link" href="http://www.blogjava.net/leekiang/category/29829.html">portal(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl36_RssLink" title="Subscribe to python(6)" href="http://www.blogjava.net/leekiang/category/34622.html/rss"><img title="Subscribe to python(6)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl36_Link" href="http://www.blogjava.net/leekiang/category/34622.html">python(6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl37_RssLink" title="Subscribe to rails(14)" href="http://www.blogjava.net/leekiang/category/44217.html/rss"><img title="Subscribe to rails(14)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl37_Link" href="http://www.blogjava.net/leekiang/category/44217.html">rails(14)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl38_RssLink" title="Subscribe to ruby(27)" href="http://www.blogjava.net/leekiang/category/30625.html/rss"><img title="Subscribe to ruby(27)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl38_Link" href="http://www.blogjava.net/leekiang/category/30625.html">ruby(27)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl39_RssLink" title="Subscribe to SOA(2)" href="http://www.blogjava.net/leekiang/category/29859.html/rss"><img title="Subscribe to SOA(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl39_Link" href="http://www.blogjava.net/leekiang/category/29859.html">SOA(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl40_RssLink" title="Subscribe to spring(17)" href="http://www.blogjava.net/leekiang/category/21130.html/rss"><img title="Subscribe to spring(17)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl40_Link" href="http://www.blogjava.net/leekiang/category/21130.html">spring(17)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl41_RssLink" title="Subscribe to sql(4)" href="http://www.blogjava.net/leekiang/category/22041.html/rss"><img title="Subscribe to sql(4)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl41_Link" href="http://www.blogjava.net/leekiang/category/22041.html">sql(4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl42_RssLink" title="Subscribe to sso(2)" href="http://www.blogjava.net/leekiang/category/36357.html/rss"><img title="Subscribe to sso(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl42_Link" href="http://www.blogjava.net/leekiang/category/36357.html">sso(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl43_RssLink" title="Subscribe to struts(4)" href="http://www.blogjava.net/leekiang/category/25860.html/rss"><img title="Subscribe to struts(4)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl43_Link" href="http://www.blogjava.net/leekiang/category/25860.html">struts(4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl44_RssLink" title="Subscribe to tips(9)" href="http://www.blogjava.net/leekiang/category/21131.html/rss"><img title="Subscribe to tips(9)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl44_Link" href="http://www.blogjava.net/leekiang/category/21131.html">tips(9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl45_RssLink" title="Subscribe to UML(5)" href="http://www.blogjava.net/leekiang/category/35711.html/rss"><img title="Subscribe to UML(5)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl45_Link" href="http://www.blogjava.net/leekiang/category/35711.html">UML(5)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl46_RssLink" title="Subscribe to web开发(33)" href="http://www.blogjava.net/leekiang/category/24531.html/rss"><img title="Subscribe to web开发(33)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl46_Link" href="http://www.blogjava.net/leekiang/category/24531.html">web开发(33)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl47_RssLink" title="Subscribe to Windows(9)" href="http://www.blogjava.net/leekiang/category/24528.html/rss"><img title="Subscribe to Windows(9)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl47_Link" href="http://www.blogjava.net/leekiang/category/24528.html">Windows(9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl48_RssLink" title="Subscribe to xml,webservice(1)" href="http://www.blogjava.net/leekiang/category/42710.html/rss"><img title="Subscribe to xml,webservice(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl48_Link" href="http://www.blogjava.net/leekiang/category/42710.html">xml,webservice(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl49_RssLink" title="Subscribe to 交互设计、产品设计(2)" href="http://www.blogjava.net/leekiang/category/46981.html/rss"><img title="Subscribe to 交互设计、产品设计(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl49_Link" href="http://www.blogjava.net/leekiang/category/46981.html">交互设计、产品设计(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl50_RssLink" title="Subscribe to 信息安全(2)" href="http://www.blogjava.net/leekiang/category/47477.html/rss"><img title="Subscribe to 信息安全(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl50_Link" href="http://www.blogjava.net/leekiang/category/47477.html">信息安全(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl51_RssLink" title="Subscribe to 其他(40)" href="http://www.blogjava.net/leekiang/category/28863.html/rss"><img title="Subscribe to 其他(40)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl51_Link" href="http://www.blogjava.net/leekiang/category/28863.html">其他(40)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl52_RssLink" title="Subscribe to 善用佳软(15)" href="http://www.blogjava.net/leekiang/category/28931.html/rss"><img title="Subscribe to 善用佳软(15)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl52_Link" href="http://www.blogjava.net/leekiang/category/28931.html">善用佳软(15)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl53_RssLink" title="Subscribe to 实用技巧(2)" href="http://www.blogjava.net/leekiang/category/35392.html/rss"><img title="Subscribe to 实用技巧(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl53_Link" href="http://www.blogjava.net/leekiang/category/35392.html">实用技巧(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl54_RssLink" title="Subscribe to 工作流(JBPM)(7)" href="http://www.blogjava.net/leekiang/category/29423.html/rss"><img title="Subscribe to 工作流(JBPM)(7)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl54_Link" href="http://www.blogjava.net/leekiang/category/29423.html">工作流(JBPM)(7)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl55_RssLink" title="Subscribe to 应用服务器(15)" href="http://www.blogjava.net/leekiang/category/24431.html/rss"><img title="Subscribe to 应用服务器(15)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl55_Link" href="http://www.blogjava.net/leekiang/category/24431.html">应用服务器(15)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl56_RssLink" title="Subscribe to 敏捷开发(2)" href="http://www.blogjava.net/leekiang/category/46792.html/rss"><img title="Subscribe to 敏捷开发(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl56_Link" href="http://www.blogjava.net/leekiang/category/46792.html">敏捷开发(2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl57_RssLink" title="Subscribe to 数据库(1)" href="http://www.blogjava.net/leekiang/category/47985.html/rss"><img title="Subscribe to 数据库(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl57_Link" href="http://www.blogjava.net/leekiang/category/47985.html">数据库(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl58_RssLink" title="Subscribe to 数据结构,算法,基础(6)" href="http://www.blogjava.net/leekiang/category/34736.html/rss"><img title="Subscribe to 数据结构,算法,基础(6)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl58_Link" href="http://www.blogjava.net/leekiang/category/34736.html">数据结构,算法,基础(6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl59_RssLink" title="Subscribe to 文件处理(10)" href="http://www.blogjava.net/leekiang/category/29573.html/rss"><img title="Subscribe to 文件处理(10)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl59_Link" href="http://www.blogjava.net/leekiang/category/29573.html">文件处理(10)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl60_RssLink" title="Subscribe to 杂感(3)" href="http://www.blogjava.net/leekiang/category/28522.html/rss"><img title="Subscribe to 杂感(3)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl60_Link" href="http://www.blogjava.net/leekiang/category/28522.html">杂感(3)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl61_RssLink" title="Subscribe to 权限(4)" href="http://www.blogjava.net/leekiang/category/30127.html/rss"><img title="Subscribe to 权限(4)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl61_Link" href="http://www.blogjava.net/leekiang/category/30127.html">权限(4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl62_RssLink" title="Subscribe to 架构设计(16)" href="http://www.blogjava.net/leekiang/category/30806.html/rss"><img title="Subscribe to 架构设计(16)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl62_Link" href="http://www.blogjava.net/leekiang/category/30806.html">架构设计(16)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl63_RssLink" title="Subscribe to 测试(12)" href="http://www.blogjava.net/leekiang/category/35372.html/rss"><img title="Subscribe to 测试(12)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl63_Link" href="http://www.blogjava.net/leekiang/category/35372.html">测试(12)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl64_RssLink" title="Subscribe to 网络通讯(6)" href="http://www.blogjava.net/leekiang/category/47960.html/rss"><img title="Subscribe to 网络通讯(6)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl64_Link" href="http://www.blogjava.net/leekiang/category/47960.html">网络通讯(6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl65_RssLink" title="Subscribe to 英语(1)" href="http://www.blogjava.net/leekiang/category/24530.html/rss"><img title="Subscribe to 英语(1)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl65_Link" href="http://www.blogjava.net/leekiang/category/24530.html">英语(1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl66_RssLink" title="Subscribe to 配置管理(cvs,svn等)(4)" href="http://www.blogjava.net/leekiang/category/43979.html/rss"><img title="Subscribe to 配置管理(cvs,svn等)(4)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl66_Link" href="http://www.blogjava.net/leekiang/category/43979.html">配置管理(cvs,svn等)(4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl67_RssLink" title="Subscribe to 项目管理(5)" href="http://www.blogjava.net/leekiang/category/35712.html/rss"><img title="Subscribe to 项目管理(5)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl67_Link" href="http://www.blogjava.net/leekiang/category/35712.html">项目管理(5)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl68_RssLink" title="Subscribe to 高性能(2)" href="http://www.blogjava.net/leekiang/category/46764.html/rss"><img title="Subscribe to 高性能(2)" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xmlsmall.gif" style="border-width:0px;"></a><a id="Singlecolumn2_Categories_CatList_ctl00_LinkList_ctl68_Link" href="http://www.blogjava.net/leekiang/category/46764.html">高性能(2)</a>
+				</li>
+			
+				</ul>
+			</div>
+	
+		<div id="cell">
+		<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>随笔档案<span style="font-size:11px;font-weight:normal">(536)</span></h3>
+		
+				<ul>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl01_Link" href="http://www.blogjava.net/leekiang/archive/2017/09.html">2017年9月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl02_Link" href="http://www.blogjava.net/leekiang/archive/2016/12.html">2016年12月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl03_Link" href="http://www.blogjava.net/leekiang/archive/2016/11.html">2016年11月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl04_Link" href="http://www.blogjava.net/leekiang/archive/2016/10.html">2016年10月 (6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl05_Link" href="http://www.blogjava.net/leekiang/archive/2015/03.html">2015年3月 (3)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl06_Link" href="http://www.blogjava.net/leekiang/archive/2015/02.html">2015年2月 (2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl07_Link" href="http://www.blogjava.net/leekiang/archive/2013/02.html">2013年2月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl08_Link" href="http://www.blogjava.net/leekiang/archive/2013/01.html">2013年1月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl09_Link" href="http://www.blogjava.net/leekiang/archive/2012/07.html">2012年7月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl10_Link" href="http://www.blogjava.net/leekiang/archive/2012/03.html">2012年3月 (2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl11_Link" href="http://www.blogjava.net/leekiang/archive/2011/12.html">2011年12月 (4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl12_Link" href="http://www.blogjava.net/leekiang/archive/2011/10.html">2011年10月 (7)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl13_Link" href="http://www.blogjava.net/leekiang/archive/2011/09.html">2011年9月 (4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl14_Link" href="http://www.blogjava.net/leekiang/archive/2011/08.html">2011年8月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl15_Link" href="http://www.blogjava.net/leekiang/archive/2011/07.html">2011年7月 (4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl16_Link" href="http://www.blogjava.net/leekiang/archive/2011/06.html">2011年6月 (6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl17_Link" href="http://www.blogjava.net/leekiang/archive/2011/05.html">2011年5月 (6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl18_Link" href="http://www.blogjava.net/leekiang/archive/2011/04.html">2011年4月 (4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl19_Link" href="http://www.blogjava.net/leekiang/archive/2011/03.html">2011年3月 (20)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl20_Link" href="http://www.blogjava.net/leekiang/archive/2011/02.html">2011年2月 (4)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl21_Link" href="http://www.blogjava.net/leekiang/archive/2011/01.html">2011年1月 (13)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl22_Link" href="http://www.blogjava.net/leekiang/archive/2010/12.html">2010年12月 (10)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl23_Link" href="http://www.blogjava.net/leekiang/archive/2010/11.html">2010年11月 (17)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl24_Link" href="http://www.blogjava.net/leekiang/archive/2010/10.html">2010年10月 (10)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl25_Link" href="http://www.blogjava.net/leekiang/archive/2010/09.html">2010年9月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl26_Link" href="http://www.blogjava.net/leekiang/archive/2010/08.html">2010年8月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl27_Link" href="http://www.blogjava.net/leekiang/archive/2010/07.html">2010年7月 (3)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl28_Link" href="http://www.blogjava.net/leekiang/archive/2010/06.html">2010年6月 (2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl29_Link" href="http://www.blogjava.net/leekiang/archive/2010/05.html">2010年5月 (16)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl30_Link" href="http://www.blogjava.net/leekiang/archive/2010/04.html">2010年4月 (13)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl31_Link" href="http://www.blogjava.net/leekiang/archive/2010/03.html">2010年3月 (15)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl32_Link" href="http://www.blogjava.net/leekiang/archive/2010/02.html">2010年2月 (29)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl33_Link" href="http://www.blogjava.net/leekiang/archive/2010/01.html">2010年1月 (6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl34_Link" href="http://www.blogjava.net/leekiang/archive/2009/12.html">2009年12月 (8)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl35_Link" href="http://www.blogjava.net/leekiang/archive/2009/11.html">2009年11月 (9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl36_Link" href="http://www.blogjava.net/leekiang/archive/2009/10.html">2009年10月 (12)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl37_Link" href="http://www.blogjava.net/leekiang/archive/2009/09.html">2009年9月 (5)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl38_Link" href="http://www.blogjava.net/leekiang/archive/2009/08.html">2009年8月 (9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl39_Link" href="http://www.blogjava.net/leekiang/archive/2009/07.html">2009年7月 (11)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl40_Link" href="http://www.blogjava.net/leekiang/archive/2009/06.html">2009年6月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl41_Link" href="http://www.blogjava.net/leekiang/archive/2009/05.html">2009年5月 (6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl42_Link" href="http://www.blogjava.net/leekiang/archive/2009/04.html">2009年4月 (1)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl43_Link" href="http://www.blogjava.net/leekiang/archive/2009/03.html">2009年3月 (9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl44_Link" href="http://www.blogjava.net/leekiang/archive/2009/02.html">2009年2月 (8)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl45_Link" href="http://www.blogjava.net/leekiang/archive/2009/01.html">2009年1月 (12)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl46_Link" href="http://www.blogjava.net/leekiang/archive/2008/12.html">2008年12月 (9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl47_Link" href="http://www.blogjava.net/leekiang/archive/2008/11.html">2008年11月 (8)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl48_Link" href="http://www.blogjava.net/leekiang/archive/2008/10.html">2008年10月 (17)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl49_Link" href="http://www.blogjava.net/leekiang/archive/2008/09.html">2008年9月 (19)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl50_Link" href="http://www.blogjava.net/leekiang/archive/2008/08.html">2008年8月 (11)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl51_Link" href="http://www.blogjava.net/leekiang/archive/2008/07.html">2008年7月 (5)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl52_Link" href="http://www.blogjava.net/leekiang/archive/2008/06.html">2008年6月 (13)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl53_Link" href="http://www.blogjava.net/leekiang/archive/2008/05.html">2008年5月 (12)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl54_Link" href="http://www.blogjava.net/leekiang/archive/2008/04.html">2008年4月 (9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl55_Link" href="http://www.blogjava.net/leekiang/archive/2008/03.html">2008年3月 (18)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl56_Link" href="http://www.blogjava.net/leekiang/archive/2008/02.html">2008年2月 (22)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl57_Link" href="http://www.blogjava.net/leekiang/archive/2008/01.html">2008年1月 (14)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl58_Link" href="http://www.blogjava.net/leekiang/archive/2007/12.html">2007年12月 (7)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl59_Link" href="http://www.blogjava.net/leekiang/archive/2007/11.html">2007年11月 (3)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl60_Link" href="http://www.blogjava.net/leekiang/archive/2007/10.html">2007年10月 (11)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl61_Link" href="http://www.blogjava.net/leekiang/archive/2007/09.html">2007年9月 (6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl62_Link" href="http://www.blogjava.net/leekiang/archive/2007/08.html">2007年8月 (9)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl63_Link" href="http://www.blogjava.net/leekiang/archive/2007/07.html">2007年7月 (12)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl64_Link" href="http://www.blogjava.net/leekiang/archive/2007/06.html">2007年6月 (2)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl65_Link" href="http://www.blogjava.net/leekiang/archive/2007/05.html">2007年5月 (6)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl66_Link" href="http://www.blogjava.net/leekiang/archive/2007/04.html">2007年4月 (16)</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl01_LinkList_ctl67_Link" href="http://www.blogjava.net/leekiang/archive/2007/03.html">2007年3月 (1)</a>
+				</li>
+			
+				</ul>
+			</div>
+	
+		<div id="cell">
+		<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>收藏</h3>
+		
+				<ul>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl01_Link" href="http://blog.youxu.info/" target="_blank">4g spaces</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl02_Link" href="http://www.blogjava.net/BlueDavy/">BlueDavy</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl03_Link" href="http://java.mblogger.cn/chineseren/">chineseren</a>
+				</li>
+			<li style="margin-top:2px;">淘宝</li>
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl04_Link" href="http://www.javayou.com/">DLOG4J 的作者</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl05_Link" href="http://blog.hedgerwow.com/">hedgerwang</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl06_Link" href="http://www.holygrace.cn/article.asp?id=17">HG.Plugins For jQuery</a>
+				</li>
+			<li style="margin-top:2px;">http://bbs.51js.com/viewthread.php?tid=74444</li>
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl07_Link" href="http://blog.csdn.net/cping1982">http://blog.csdn.net/cping1982</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl08_Link" href="http://sjs1919.blog.163.com/">mop某人</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl09_Link" href="https://www.site-founder.com/">site-founder</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl10_Link" href="http://timyang.net/" target="_blank">Tim[后端技术]</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl11_Link" href="http://www.tinydust.net/prog/diary/diary.htm">Tinyfool的开发日记</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl12_Link" href="http://www.yeeach.com/">Yeeach</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl13_Link" href="http://zhujimi.net/">主机迷</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl14_Link" href="http://www.luanxiang.org/blog/" target="_blank">余晟</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl15_Link" href="http://www.phpchina.com/116">大白菜芯</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl16_Link" href="http://www.zhuangbiaowei.cn/">庄表伟</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl17_Link" href="http://weigaoxiao.net/">微搞笑</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl18_Link" href="http://www.blogjava.net/RongHao/">心情小站</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl19_Link" href="http://realazy.org/blog/category/javascript-dom/">懒人</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl20_Link" href="http://blog.163.com/miaoxiaodong78/">无锡缪小东</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl21_Link" href="http://blog.csdn.net/g9yuayon">负暄琐话</a>
+				</li>
+			
+				<li><a id="Singlecolumn2_Categories_CatList_ctl02_LinkList_ctl22_Link" href="http://blog.filia.cn/">飞纯技术</a>
+				</li>
+			
+				</ul>
+			</div>
+	
+
+<script language="JavaScript">
+function SearchGoogle(key,evt,site)
+		{
+			if(evt.keyCode==13 || evt.keyCode==0)
+			{
+				key.focus();
+				var keystr = encodeURIComponent(key.value);
+				url = "http://www.google.com/search?q=";
+				url = url+keystr;
+				url += "&ie=UTF-8&oe=GB2312&hl=zh-CN&domains="+site+"&sitesearch="+site;
+				window.location = url;
+				return false;			
+			}
+			
+		}
+</script>
+<div id="cell">
+<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>搜索</h3>
+<ul>
+	<li><input style="WIDTH: 130px" type="text" name="q" id="q" onkeydown="return SearchGoogle(document.getElementById(&#39;q&#39;),event,&#39;http://www.blogjava.net/leekiang/&#39;)">&nbsp;<input onclick="SearchGoogle(document.getElementById(&#39;q&#39;),event,&#39;http://www.blogjava.net/leekiang/&#39;)" type="button" value="搜索" name="sa"></li></ul>
+</div>
+<div id="cell">
+<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>积分与排名</h3>
+<ul>
+	<li>
+		积分 -
+		505638
+	</li><li>
+		排名 -
+		84
+	</li>
+</ul>
+</div>
+
+<div id="cell">
+<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>最新评论
+	<a id="Singlecolumn2__285d0c42865c_RSSHyperlink1" href="http://www.blogjava.net/leekiang/CommentsRSS.aspx"><img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/xml.gif" style="border-width:0px;"></a></h3>
+<div class="RecentComment">
+	
+			<ul>
+		
+			<li style="word-break:break-all">
+				<a id="Singlecolumn2__285d0c42865c_CommentList_ctl01_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2016/07/06/345550.html#431109">1.&nbsp;re: 开源的会议室预订系统MRBS</a>
+			</li>
+			<li style="word-break:break-all">
+				谢谢
+			</li>
+			<li style="text-align:right;margin-right:4px">
+				--请问</li>
+		
+			<li style="word-break:break-all">
+				<a id="Singlecolumn2__285d0c42865c_CommentList_ctl02_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2016/01/15/113810.html#429065">2.&nbsp;re: ClassNotFoundException和NoClassDefError之间的区别</a>
+			</li>
+			<li style="word-break:break-all">
+				评论内容较长,点击标题查看
+			</li>
+			<li style="text-align:right;margin-right:4px">
+				--jiangzx</li>
+		
+			<li style="word-break:break-all">
+				<a id="Singlecolumn2__285d0c42865c_CommentList_ctl03_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2015/09/19/107977.html#427401">3.&nbsp;re: office2003安装错误，找不到源文件的解决办法</a>
+			</li>
+			<li style="word-break:break-all">
+				  找不到MSCOCAHO文件怎么办啊，怎么可以有这个文件
+<br>
+			</li>
+			<li style="text-align:right;margin-right:4px">
+				--人生 </li>
+		
+			<li style="word-break:break-all">
+				<a id="Singlecolumn2__285d0c42865c_CommentList_ctl04_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2015/05/27/345550.html#425323">4.&nbsp;re: 开源的会议室预订系统MRBS</a>
+			</li>
+			<li style="word-break:break-all">
+				xiexie 
+			</li>
+			<li style="text-align:right;margin-right:4px">
+				--xu </li>
+		
+			<li style="word-break:break-all">
+				<a id="Singlecolumn2__285d0c42865c_CommentList_ctl05_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2015/01/03/107977.html#422016">5.&nbsp;re: office2003安装错误，找不到源文件的解决办法</a>
+			</li>
+			<li style="word-break:break-all">
+				评论内容较长,点击标题查看
+			</li>
+			<li style="text-align:right;margin-right:4px">
+				--张德龙</li>
+		
+			</ul>
+		
+</div>
+</div>
+
+<div id="cell">
+<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>阅读排行榜</h3>
+<div class="RecentComment">
+	
+			<ul style="word-break:break-all">
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl01_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/10/17/153685.html">1.&nbsp;tomcat的URIEncoding的作用(转)(35494)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl02_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/08/27/139844.html">2.&nbsp;使用commons fileupload的零碎笔记(27832)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl03_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/04/02/107977.html">3.&nbsp;office2003安装错误，找不到源文件的解决办法(26754)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl04_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/08/10/135838.html">4.&nbsp;ClientAbortException,Connection reset by peer: socket write error (摘自javaeye)(11892)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl05_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/06/19/209249.html">5.&nbsp;YAML格式解析(9358)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl06_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2011/01/03/342205.html">6.&nbsp;各个linux版本（Redhat,Debian,Ubuntu,Gentoo,FreeBSD）的比较(转)(8700)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl07_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/08/03/134140.html">7.&nbsp;原来BufferedReader不能和InputStream交替使用(转)(8614)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl08_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2009/02/04/253304.html">8.&nbsp;java内存泄漏笔记之二(8239)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl09_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/09/24/147851.html">9.&nbsp;如何使得table出现滚动条(7684)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl10_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/10/31/237908.html">10.&nbsp;hibernate异常"Found shared references to a collection"(6188)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl11_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/09/16/145651.html">11.&nbsp;double转string(6000)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl12_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2009/01/14/251270.html">12.&nbsp;java内存泄漏笔记(5871)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl13_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/06/07/206456.html">13.&nbsp;jquery源代码解读笔记(4731)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl14_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html">14.&nbsp;ClassNotFoundException和NoClassDefError之间的区别(4653)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl15_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/07/04/128185.html">15.&nbsp;别名为什么不能做条件，ORA-00904: "CCC": 标识符无效(4248)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl16_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/10/21/235793.html">16.&nbsp;在线测试java的正则表达式(4199)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl17_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2011/09/25/359459.html">17.&nbsp;如何切换svn地址(3958)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl18_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/03/14/186391.html">18.&nbsp;poi笔记(3878)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl19_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/03/28/189285.html">19.&nbsp;jquery模态窗口(3869)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl20_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/11/14/160637.html">20.&nbsp;createElement方法在IE和Firefox下的差异(转)(3793)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl21_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2010/04/14/318272.html">21.&nbsp;weblogic上HttpURLConnection的超时(3617)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl22_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2009/08/19/291873.html">22.&nbsp;手技抛球教学基础(转)(3595)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl23_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2011/03/17/346435.html">23.&nbsp;ibatis原理与源码分析(3493)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl24_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/05/07/198957.html">24.&nbsp;jquery自动完成(3442)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl25_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/11/27/242912.html">25.&nbsp;rails+mysql配置及简单例子(3359)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl26_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/06/25/210564.html">26.&nbsp;bitmap位图索引(3291)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl27_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/10/21/235794.html">27.&nbsp;用poi生成链接(3251)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl28_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2010/02/11/312575.html">28.&nbsp;MyEclipse 8 优化 (3159)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl29_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2008/11/29/243368.html">29.&nbsp;jCIFS(转)(3071)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__426936e14971_TopList_ctl30_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2010/01/27/311013.html">30.&nbsp;Spring AOP应该用到Spring MVC上不起作用?(3019)</a>
+			</li>
+		
+			</ul>
+		
+</div>
+</div>
+
+<div id="cell">
+<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/icon-group.jpg" hspace="5" align="left" vspace="2"><h3>评论排行榜</h3>
+<div class="RecentComment">
+	
+			<ul style="word-break:break-all">
+		
+			<li>
+				<a id="Singlecolumn2__4475ca266d4b_TopList_ctl01_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/04/02/107977.html">1.&nbsp;office2003安装错误，找不到源文件的解决办法(26)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__4475ca266d4b_TopList_ctl02_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/04/04/108527.html">2.&nbsp;JasperReports 1.3.2发布了,跟还是不跟?(6)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__4475ca266d4b_TopList_ctl03_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/08/27/139844.html">3.&nbsp;使用commons fileupload的零碎笔记(6)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__4475ca266d4b_TopList_ctl04_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/08/10/135838.html">4.&nbsp;ClientAbortException,Connection reset by peer: socket write error (摘自javaeye)(5)</a>
+			</li>
+		
+			<li>
+				<a id="Singlecolumn2__4475ca266d4b_TopList_ctl05_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html">5.&nbsp;ClassNotFoundException和NoClassDefError之间的区别(4)</a>
+			</li>
+		
+			</ul>
+		
+</div>
+</div>
+
+</div>
+		</td>
+		<td class="MainCell">
+			<div id="main">
+				
+					
+	<div class="post">
+		<div class="posthead">
+			<h2>
+				<a id="viewpost1_TitleUrl" class="singleposttitle" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html">ClassNotFoundException和NoClassDefError之间的区别</a>
+			</h2>
+ 			Posted on 2007-04-26 15:55 <a href="http://www.blogjava.net/leekiang/">leekiang</a> 阅读(4653) <a href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html#Post">评论(4)</a> &nbsp;<a href="http://www.blogjava.net/leekiang/admin/EditPosts.aspx?postid=113810">编辑</a> &nbsp;<a href="http://www.blogjava.net/leekiang/AddToFavorite.aspx?id=113810">收藏</a>  所属分类: <a href="http://www.blogjava.net/leekiang/category/21757.html">java</a> 
+			<img src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/113810.html" width="1" height="1">
+			
+<!--
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:trackback="http://madskills.com/public/xml/rss/module/trackback/">
+<rdf:Description
+rdf:about="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html"
+dc:identifier="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html"
+dc:title="ClassNotFoundException和NoClassDefError之间的区别"
+trackback:ping="http://www.blogjava.net/leekiang/services/trackbacks/113810.aspx" />
+</rdf:RDF>
+-->
+
+		</div>
+		<div class="postbody"><p>ClassNotFoundException发生在装入阶段。 <br>当应用程序试图通过类的字符串名称，使用常规的三种方法装入类，但却找不到指定名称的类定义时就抛出该异常。</p>
+<p>NoClassDefFoundError： 当目前执行的类已经编译，但是找不到它的定义时</p>
+<p>也就是说你如果编译了一个类B，在类A中调用，编译完成以后，你又删除掉B，运行A的时候那么就会出现这个错误<br><br>加载时从外存储器找不到需要的class就出现ClassNotFoundException <br>连接时从内存找不到需要的class就出现NoClassDefFoundError<br><br></p>
+<p>大概这样的吧,JDK API里面的解释 <br>1.NoClassDefFoundError <br>当 Java 虚拟机或 ClassLoader 实例试图在类的定义中加载（作为通常方法调用的一部分或者作为使用 new 表达式创建的新实例的一部分），但无法找到该类的定义时，抛出此异常。 <br>当前执行的类被编译时，所搜索的类定义存在，但无法再找到该定义。 </p>
+<p>2.ClassNotFoundException <br>当应用程序试图使用以下方法通过字符串名加载类时，抛出该异常： <br>* Class 类中的 forName 方法。 <br>* ClassLoader 类中的 findSystemClass 方法。 <br>* ClassLoader 类中的 loadClass 方法。 <br>但是没有找到具有指定名称的类的定义。从 1.4 版本开始，此异常已经更新，以符合通用的异常链机制。在构造时提供并通过 getException() 方法访问的“加载类时引发的可选异常”，现在被称为原因，它可以通过 Throwable.getCause() 方法以及与上面提到的“遗留方法”来访问。<br><br>见<a href="http://www.javaeye.com/topic/21141?page=1">http://www.javaeye.com/topic/21141?page=1</a></p>
+</div>
+	</div>
+	<script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('AjaxHolder$scriptmanager1', document.getElementById('Form1'));
+Sys.WebForms.PageRequestManager.getInstance()._updateControls(['tAjaxHolder$UpdatePanel1'], [], [], 90);
+//]]>
+</script>
+
+<div id="AjaxHolder_UpdatePanel1">
+	    
+    <a name="pagedcomment"></a>
+<br>
+<h3>评论</h3>
+	
+			<div class="post">
+				<div class="posthead">
+					<h2>
+						<a title="permalink: re: ClassNotFoundException和NoClassDefError之间的区别" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html#303239">#</a>&nbsp;<a name="303239"></a>re: ClassNotFoundException和NoClassDefError之间的区别&nbsp;&nbsp;<a onclick="return SetReplyAuhor(&quot;11&quot;)" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html#post">回复</a>&nbsp;&nbsp;<a title="查看该作者发表过的评论" href="http://www.blogjava.net/comment?author=11" target="_blank">更多评论</a>
+						<a id="AjaxHolder_Comments_CommentList_ctl00_DeleteLink" href="javascript:__doPostBack(&#39;AjaxHolder$Comments$CommentList$ctl00$DeleteLink&#39;,&#39;&#39;)"></a>&nbsp;&nbsp;<a id="AjaxHolder_Comments_CommentList_ctl00_EditLink"></a>
+					</h2>
+					2009-11-22 17:35 by <a id="AjaxHolder_Comments_CommentList_ctl00_NameLink" target="_blank">11</a>
+				</div>
+				<div class="postbody"> java.lang.NoClassDefFoundError出现的可能几种情况<br>1、确实有某个类不存在。<br>2、某个类所依赖的class或jar不存在，导致未正常加载。<br>3、单实例类，由于初始化出错，也会抛出该error。<br>4、对于有些框架，自动生成java bean的时候，如果相应的class没有提供默认构造函数，会抛此异常。 </div>
+			</div>
+		
+			<div class="post">
+				<div class="posthead">
+					<h2>
+						<a title="permalink: re: ClassNotFoundException和NoClassDefError之间的区别" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html#303240">#</a>&nbsp;<a name="303240"></a>re: ClassNotFoundException和NoClassDefError之间的区别&nbsp;&nbsp;<a onclick="return SetReplyAuhor(&quot;11&quot;)" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html#post">回复</a>&nbsp;&nbsp;<a title="查看该作者发表过的评论" href="http://www.blogjava.net/comment?author=11" target="_blank">更多评论</a>
+						<a id="AjaxHolder_Comments_CommentList_ctl01_DeleteLink" href="javascript:__doPostBack(&#39;AjaxHolder$Comments$CommentList$ctl01$DeleteLink&#39;,&#39;&#39;)"></a>&nbsp;&nbsp;<a id="AjaxHolder_Comments_CommentList_ctl01_EditLink"></a>
+					</h2>
+					2009-11-22 17:35 by <a id="AjaxHolder_Comments_CommentList_ctl01_NameLink" target="_blank">11</a>
+				</div>
+				<div class="postbody">还有几种情况<br>1、类文件存在，但处于不同的Domain中，有可能无法正常加载，特别是基于OSGI的体系，这种情况很常见<br>2、即使一个类不是单例，如果有static{}代码，其中出错了，也无法加载 </div>
+			</div>
+		
+			<div class="post">
+				<div class="posthead">
+					<h2>
+						<a title="permalink: re: ClassNotFoundException和NoClassDefError之间的区别" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html#303241">#</a>&nbsp;<a name="303241"></a>re: ClassNotFoundException和NoClassDefError之间的区别&nbsp;&nbsp;<a onclick="return SetReplyAuhor(&quot;11&quot;)" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html#post">回复</a>&nbsp;&nbsp;<a title="查看该作者发表过的评论" href="http://www.blogjava.net/comment?author=11" target="_blank">更多评论</a>
+						<a id="AjaxHolder_Comments_CommentList_ctl02_DeleteLink" href="javascript:__doPostBack(&#39;AjaxHolder$Comments$CommentList$ctl02$DeleteLink&#39;,&#39;&#39;)"></a>&nbsp;&nbsp;<a id="AjaxHolder_Comments_CommentList_ctl02_EditLink"></a>
+					</h2>
+					2009-11-22 17:36 by <a id="AjaxHolder_Comments_CommentList_ctl02_NameLink" target="_blank">11</a>
+				</div>
+				<div class="postbody">真的是NoClassDefFoundError吗<br><br>前两天碰到一个奇怪的问题，异常的信息就是NoClassDefFoundError，但是需要加载的类肯定是可以找得到的，最后问题的根源在于内存不足，由于产品需要加载的类非常的多，到现在我们的maxPermSize已经需要设置为128m了，而那个错误就是由于内存不足，类初始化的时候内存不足无法初始化成功导致出现 NoClassDefFoundError，这个就让我联想到原来经常遇到的类实例初始化的异常，最终报的错也是 NoClassDefFoundError，呵呵，所以，以后遇到这个异常要仔细看看后面的详细异常信息，如果是&lt;clinit&gt;抛出的，基本上就是初始化失败而不是真正的找不到类定义了。<br><a href="http://www.jiehoo.com/%E7%9C%9F%E7%9A%84%E6%98%AFnoclassdeffounderror%E5%90%97.htm" target="_new" rel="nofollow">http://www.jiehoo.com/%E7%9C%9F%E7%9A%84%E6%98%AFnoclassdeffounderror%E5%90%97.htm</a></div>
+			</div>
+		
+			<div class="post">
+				<div class="posthead">
+					<h2>
+						<a title="permalink: re: ClassNotFoundException和NoClassDefError之间的区别" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html#429065">#</a>&nbsp;<a name="429065"></a>re: ClassNotFoundException和NoClassDefError之间的区别<a name="Post"></a>&nbsp;&nbsp;<a onclick="return SetReplyAuhor(&quot;jiangzx&quot;)" href="http://www.blogjava.net/leekiang/archive/2007/04/26/113810.html#post">回复</a>&nbsp;&nbsp;<a title="查看该作者发表过的评论" href="http://www.blogjava.net/comment?author=jiangzx" target="_blank">更多评论</a>
+						<a id="AjaxHolder_Comments_CommentList_ctl03_DeleteLink" href="javascript:__doPostBack(&#39;AjaxHolder$Comments$CommentList$ctl03$DeleteLink&#39;,&#39;&#39;)"></a>&nbsp;&nbsp;<a id="AjaxHolder_Comments_CommentList_ctl03_EditLink"></a>
+					</h2>
+					2016-01-15 17:39 by <a id="AjaxHolder_Comments_CommentList_ctl03_NameLink" href="http://107x.iteye.com/" target="_blank">jiangzx</a>
+				</div>
+				<div class="postbody">NoClassDefFound may indicate the class is not there, as the javadocs indicate, but it is typically thrown when, after the classloader has loaded the bytes for the class and calls "defineClass" on them. Also carefully check your full stack trace for other clues or possible "cause" Exceptions (though your particular backtrace shows none).<br><br>From: <a href="http://stackoverflow.com/questions/1401111/noclassdeffounderror-could-not-initialize-class-error" target="_new" rel="nofollow">http://stackoverflow.com/questions/1401111/noclassdeffounderror-could-not-initialize-class-error</a></div>
+			</div>
+		
+<style>
+td { font-size: 12px }
+.commentTextBox 
+{ 
+    font-family : Verdana; 
+    font-size: 13px;
+ }
+</style>
+<!--Beging Temp Save-->
+<style>.userData { BEHAVIOR: url(#default#userdata) }
+	</style>
+<div class="userData" id="CommentsPersistDiv"></div>
+
+<script type="text/javascript">
+function pageLoad()
+{
+    Sys.WebForms.PageRequestManager.getInstance().add_initializeRequest(handleInitializeRequest);
+    //Sys.WebForms.PageRequestManager.getInstance().add_endRequest(handleEndRequest);
+}
+
+function handleInitializeRequest(sender, args)
+{
+    var prm = Sys.WebForms.PageRequestManager.getInstance();
+    var eid = args.get_postBackElement().id;
+    if (eid.indexOf("DeleteLink")>0) 
+    {
+       args.get_postBackElement().innerHTML = "<font color='red'>正在删除...</font>";         
+    }    
+    else if (eid.indexOf("btnSubmit")>0) 
+    {
+       document.getElementById("AjaxHolder_PostComment_ltSubmitMsg").innerHTML="正在提交...";
+       document.getElementById("AjaxHolder_PostComment_btnSubmit").disabled = true;       
+    }   
+    else if(eid.indexOf("refreshList")>0)
+    {
+        document.getElementById("AjaxHolder_PostComment_refreshList").innerHTML="<font color='red'>正在刷新...</font>";
+    }
+   
+}	
+
+function TempSave(ElementID)
+{
+	try
+	{
+	CommentsPersistDiv.setAttribute("CommentContent",document.getElementById(ElementID).value);
+	CommentsPersistDiv.save("CommentXMLStore");
+	}
+	catch(ex)
+	{
+	}
+	
+}
+function Restore(ElementID)
+{
+	CommentsPersistDiv.load("CommentXMLStore");
+	document.getElementById(ElementID).value=CommentsPersistDiv.getAttribute("CommentContent");
+}	
+			
+			
+</script>
+<!--Ene TempSave-->
+<div id="divRefreshComments" style="text-align:right;margin-right:10px;margin-bottom:5px;font-size:12px"><a href="http://www.blogjava.net/RequireRegister.aspx">新用户注册</a>&nbsp;&nbsp;<a id="AjaxHolder_PostComment_refreshList" href="javascript:__doPostBack(&#39;AjaxHolder$PostComment$refreshList&#39;,&#39;&#39;)">刷新评论列表</a>&nbsp;&nbsp;</div>
+<div class="commentform">
+<span id="AjaxHolder_PostComment_ltSubmitMsg" style="color:Red;"></span>
+<br>
+<a name="Feedback"></a>
+	<table cellspacing="1" cellpadding="1" border="0">
+		<tbody><tr>
+		<td id="AjaxHolder_PostComment_tdOnCommentForm" colspan="3" style="line-height:1.5">		
+		</td>
+	
+		</tr>
+		
+		<tr><td colspan="3">只有注册用户<a href="http://www.blogjava.net/login.aspx?ReturnUrl=/leekiang/archive/2007/04/26/113810.html">登录</a>后才能发表评论。</td></tr>
+		<tr>
+			<td colspan="3"><!----></td>
+		</tr>
+		<!--
+		<TR>
+			<TD colSpan="3" height="5"></TD>
+		</TR>	
+		-->	
+		<tr>
+		<td colspan="3">
+		<br>
+		
+<script type="text/javascript">
+var googletag = googletag || {};
+googletag.cmd = googletag.cmd || [];
+(function() {
+var gads = document.createElement('script');
+gads.async = true;
+gads.type = 'text/javascript';
+var useSSL = 'https:' == document.location.protocol;
+gads.src = (useSSL ? 'https:' : 'http:') + 
+'//www.googletagservices.com/tag/js/gpt.js';
+var node = document.getElementsByTagName('script')[0];
+node.parentNode.insertBefore(gads, node);
+})();
+</script>
+
+<script type="text/javascript">
+googletag.cmd.push(function() {
+googletag.defineSlot('/1090369/blogjava_blogpost_bottom', [300, 250], 'div-gpt-ad-1364133350381-0').addService(googletag.pubads());
+googletag.pubads().enableSingleRequest();
+googletag.enableServices();
+});
+</script>
+<!-- blogjava_blogpost_bottom -->
+<div id="div-gpt-ad-1364133350381-0" style="width:300px; height:250px;">
+<script type="text/javascript">
+googletag.cmd.push(function() { googletag.display('div-gpt-ad-1364133350381-0'); });
+</script>
+<div id="google_ads_iframe_/1090369/blogjava_blogpost_bottom_0__container__" style="border: 0pt none;"><iframe id="google_ads_iframe_/1090369/blogjava_blogpost_bottom_0" title="3rd party ad content" name="google_ads_iframe_/1090369/blogjava_blogpost_bottom_0" width="300" height="250" scrolling="no" marginwidth="0" marginheight="0" frameborder="0" style="border: 0px; vertical-align: bottom;" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/saved_resource.html"></iframe></div></div>
+<br>
+
+		</td>
+		</tr>
+		<tr>			
+		<td colspan="3">
+		
+		</td>
+		</tr>
+		<tr>
+		<td colspan="3"></td>
+		</tr>
+		<tr>
+			<td colspan="3" height="1">网站导航:<div id="blogsite">
+			<a href="http://www.cnblogs.com/" title="开发者的网上家园">博客园</a>&nbsp;&nbsp;
+			<a href="https://news.cnblogs.com/">IT新闻</a>&nbsp;&nbsp;
+			<a href="http://kb.cnblogs.com/">知识库</a>&nbsp;&nbsp;
+			<a href="http://www.cppblog.com/">C++博客</a>&nbsp;&nbsp;
+			<a href="https://q.cnblogs.com/">博问</a>&nbsp;&nbsp;
+			
+			</div>
+		</td>
+		</tr>
+		<tr>
+			<td colspan="3" height="5">
+<div id="divRelativePosts">
+相关文章:
+	
+			<ul style="margin-top:0px;padding-left:0px;">
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl01_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2017/09/27/432836.html">java8国际化直接支持的语言列表</a>
+			</li>
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl02_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2015/03/02/423120.html">如何用 Java 获取系统 IP？</a>
+			</li>
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl03_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2015/03/02/423119.html">CountDownLatch和CyclicBarrier的区别</a>
+			</li>
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl04_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2015/03/01/423104.html">java调用shell</a>
+			</li>
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl05_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2015/02/17/422968.html">jvm内存分析笔记</a>
+			</li>
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl06_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2015/02/17/422967.html">java 应用监控</a>
+			</li>
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl07_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2013/02/17/395354.html">Error: no `server' JVM at `C:\Program Files\Java\jre6\bin\server\jvm.dll</a>
+			</li>
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl08_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2011/10/07/360108.html">JDK5笔记</a>
+			</li>
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl09_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2011/09/27/359602.html">log4j</a>
+			</li>
+		
+			<li style="list-style:none;">
+				<a id="AjaxHolder_PostComment_ctl07_RelativePostsList_ctl10_Hyperlink1" href="http://www.blogjava.net/leekiang/archive/2011/09/03/357864.html">java基础(续)</a>
+			</li>
+		
+			</ul>
+		
+</div>
+</td>
+		</tr>	
+		<tr>
+			<td colspan="3">&nbsp;</td>
+		</tr>
+		<tr>
+			<td colspan="3" height="5"></td>
+		</tr>
+		<tr>
+			<td colspan="3">
+				</td>
+		</tr>		
+	</tbody></table>	
+</div>
+<div id="AjaxHolder_PostComment_ValidationSummary1" style="color:Red;display:none;">
+
+	</div>
+
+</div>
+
+				
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td colspan="2" class="FooterCell">
+			
+<p id="footer">
+	Powered by: 
+	<br>
+	
+	<a id="Footer1_Hyperlink3" name="Hyperlink1" href="http://www.blogjava.net/" style="font-family:Verdana;font-size:12px;">BlogJava</a>
+	<br>
+	Copyright © leekiang
+</p>
+
+		</td>
+	</tr>
+</tbody></table>
+<div id="lefttemp" style="DISPLAY:none"></div>
+<iframe data-aa="242922" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/242922.html" scrolling="no" style="width:728px; height:90px; border:0px; padding:0;overflow:hidden" allowtransparency="true" frameborder="0"></iframe>
+
+<script type="text/javascript" src="https://adbit.co/js/show_ads.js"></script>
+
+
+    
+<script type="text/javascript">
+//<![CDATA[
+var Page_ValidationSummaries =  new Array(document.getElementById("AjaxHolder_PostComment_ValidationSummary1"));
+//]]>
+</script>
+
+<script type="text/javascript">
+//<![CDATA[
+var AjaxHolder_PostComment_ValidationSummary1 = document.all ? document.all["AjaxHolder_PostComment_ValidationSummary1"] : document.getElementById("AjaxHolder_PostComment_ValidationSummary1");
+AjaxHolder_PostComment_ValidationSummary1.showmessagebox = "True";
+AjaxHolder_PostComment_ValidationSummary1.showsummary = "False";
+//]]>
+</script>
+
+
+<script type="text/javascript">
+//<![CDATA[
+
+document.getElementById('AjaxHolder_PostComment_ValidationSummary1').dispose = function() {
+    Array.remove(Page_ValidationSummaries, document.getElementById('AjaxHolder_PostComment_ValidationSummary1'));
+}
+Sys.Application.initialize();
+//]]>
+</script>
+</form>
+    <script type="text/javascript" src="./ClassNotFoundException和NoClassDefError之间的区别 - - BlogJava_files/ShowHidden.js"></script>
+	<script type="text/javascript">
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'UA-476124-3']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+	</script>
+
+
+</body></html>

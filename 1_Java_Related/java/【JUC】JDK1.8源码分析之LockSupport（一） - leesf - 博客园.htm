@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<!-- saved from url=(0046)http://www.cnblogs.com/leesf456/p/5347293.html -->
+<html lang="zh-cn" class="cye-disabled cye-lm"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="origin">
+    <title>【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园</title>
+<meta property="og:description" content="一、前言 最开始打算分析ReentrantLock，但是分析到最后，发现离不开LockSuport的支持，所以，索性就先开始分析LockSupport，因为它是锁中的基础，是一个提供锁机制的工具类，所">
+    <link type="text/css" rel="stylesheet" href="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/blog-common.css">
+<link id="MainCss" type="text/css" rel="stylesheet" href="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/bundle-CodingLife.css">
+<link type="text/css" rel="stylesheet" href="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/236150.css">
+<link id="mobile-style" media="only screen and (max-width: 767px)" type="text/css" rel="stylesheet" href="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/bundle-CodingLife-mobile.css">
+    <link title="RSS" type="application/rss+xml" rel="alternate" href="https://www.cnblogs.com/leesf456/rss">
+    <link title="RSD" type="application/rsd+xml" rel="EditURI" href="https://www.cnblogs.com/leesf456/rsd.xml">
+<link type="application/wlwmanifest+xml" rel="wlwmanifest" href="https://www.cnblogs.com/leesf456/wlwmanifest.xml">
+    <script src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/f.txt"></script><script src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/pubads_impl_rendering_313.js"></script><script async="" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/analytics.js"></script><script type="text/javascript" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/encoder.js"></script><script src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/jquery-2.2.0.min.js"></script><style id="nightModeStyle">
+html.cye-enabled.cye-nm:not(*:-webkit-full-screen) body,
+ html.cye-enabled.cye-nm:not(*:-webkit-full-screen) #cye-workaround-body {-webkit-filter:contrast(91%) brightness(84%) invert(1);}</style><style id="cyebody">html.cye-enabled.cye-lm body{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyediv">html.cye-enabled.cye-lm div{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyetable">html.cye-enabled.cye-lm th{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}html.cye-enabled.cye-lm td{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyetextInput">html.cye-enabled.cye-lm input[type=text]{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}html.cye-enabled.cye-lm textarea{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyeselect">html.cye-enabled.cye-lm select{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyeul">html.cye-enabled.cye-lm ul{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyeChangeByClick">html.cye-enabled.cye-lm .cye-lm-tag,html.cye-enabled.cye-lm.cye-lm-tag{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style>
+    <script>var currentBlogId=236150;var currentBlogApp='leesf456',cb_enable_mathjax=false;var isLogined=false;</script>
+    <script src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/blog-common.js" type="text/javascript"></script>
+<link rel="preload" href="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/f(1).txt" as="script"><script type="text/javascript" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/f(1).txt"></script><script src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/pubads_impl_313.js" async=""></script><link rel="prefetch" href="http://tpc.googlesyndication.com/safeframe/1-0-32/html/container.html"><link rel="shortcut icon" href="https://files.cnblogs.com/files/leesf456/20160324090549.ico"><style type="text/css"></style><style type="text/css"></style></head><div id="cyeBlackMaskLayer" style="background-color: rgb(19, 19, 19); position: fixed; width: 1980px; height: 1080px; z-index: -2147483648;"></div>
+<body style="">
+<a name="top"></a>
+
+<!--PageBeginHtml Block Begin-->
+<a href="https://github.com/leesf" target="_blank"><img style="position: fixed; top: 0px; right: 0px; border: 0px; display: block;" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/fork_me_on_github.ico"></a>
+
+
+
+<script>
+window.tctipConfig = {
+        imagePrefix: "https://files.cnblogs.com/files/kdy11/",
+        cssPrefix:     "https://files.cnblogs.com/files/kdy11",
+        buttonImageId:  4,
+        buttonTip:  "dashang",
+        list:{
+            alipay: {qrimg: "https://files.cnblogs.com/files/leesf456/alipay.gif"},
+            weixin:{qrimg: "https://files.cnblogs.com/files/leesf456/weixin.gif"},
+        }
+};
+</script>
+<script src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/tctip.min.js"></script><link type="text/css" rel="stylesheet" href="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/myRewards.css"><div id="myRewards" class="myRewards" style="width: 0px;"><a class="btn-myRewards" href="javascript:;"><img class="png" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/tab_4.bmp"></a><div class="myRewards-main"><h1 class="myR-h">喜欢请打赏</h1><div class="myRewardsbox"><div class="myRewards-list"><ul class="not-full"><li class="myR-on"><a href="javascript:;">支付宝<img class="png" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/alipay.bmp" alt="支付宝"></a></li><li class=""><a href="javascript:;">微信<img class="png" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/weixin.bmp" alt="微信"></a></li></ul></div><div class="myRewards-detail"><div class="myRewards-ubox"><p class="myRewards-code-tit">扫描二维码打赏</p><div class="myRewards-code"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/alipay.gif"></div><p class="myRewards-account">支付宝打赏</p></div></div></div><p class="myR-bot"><a href="https://github.com/greedying/tctip" target="_blank">了解更多</a></p></div></div><script src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/index"></script>
+<!--PageBeginHtml Block End-->
+
+<!--done-->
+<div id="home">
+<div id="header">
+	<div id="blogTitle">
+	<a id="lnkBlogLogo" href="https://www.cnblogs.com/leesf456/"><img id="blogLogo" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/logo.gif" alt="返回主页"></a>			
+		
+<!--done-->
+<h1><a id="Header1_HeaderTitle" class="headermaintitle" href="https://www.cnblogs.com/leesf456/">leesf</a></h1>
+<h2>掌控之中，才会成功；掌控之外，注定失败。</h2>
+
+
+
+		
+	</div><!--end: blogTitle 博客的标题和副标题 -->
+	<div id="navigator">
+		
+<ul id="navList">
+<li><a id="blog_nav_sitehome" class="menu" href="https://www.cnblogs.com/">博客园</a></li>
+<li><a id="blog_nav_myhome" class="menu" href="https://www.cnblogs.com/leesf456/">首页</a></li>
+<li><a id="blog_nav_newpost" class="menu" rel="nofollow" href="https://i.cnblogs.com/EditPosts.aspx?opt=1">新随笔</a></li>
+<li><a id="blog_nav_contact" class="menu" rel="nofollow" href="https://msg.cnblogs.com/send/leesf">联系</a></li>
+<li>
+<!----></li>
+<li><a id="blog_nav_admin" class="menu" rel="nofollow" href="https://i.cnblogs.com/">管理</a></li>
+</ul>
+		<div class="blogStats">
+			
+			<div id="blog_stats">
+<span id="stats_post_count">随笔 - 184&nbsp; </span>
+<span id="stats_article_count">文章 - 1&nbsp; </span>
+<span id="stats-comment_count">评论 - 407</span>
+</div>
+			
+		</div><!--end: blogStats -->
+	</div><!--end: navigator 博客导航栏 -->
+</div><!--end: header 头部 -->
+
+<div id="main">
+	<div id="mainContent">
+	<div class="forFlow">
+		
+        <div id="post_detail">
+<!--done-->
+<div id="topics">
+	<div class="post">
+		<h1 class="postTitle">
+			<a id="cb_post_title_url" class="postTitle2" href="https://www.cnblogs.com/leesf456/p/5347293.html">【JUC】JDK1.8源码分析之LockSupport（一）</a>
+		</h1>
+		<div class="clear"></div>
+		<div class="postBody">
+			<div id="cnblogs_post_body" class="blogpost-body"><p><strong>一、前言</strong></p>
+<p>　　最开始打算分析ReentrantLock，但是分析到最后，发现离不开LockSuport的支持，所以，索性就先开始分析LockSupport，因为它是锁中的基础，是一个提供锁机制的工具类，所以先对其进行分析。</p>
+<p><strong>二、LockSupport源码分析</strong></p>
+<p>　　<span style="color: #ff0000;">2.1 类的属性</span>　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;5a2ad42a-fa98-453a-8eeb-3e37f5a25107&#39;)"><img id="code_img_closed_5a2ad42a-fa98-453a-8eeb-3e37f5a25107" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt="" style="display: none;"><img id="code_img_opened_5a2ad42a-fa98-453a-8eeb-3e37f5a25107" class="code_img_opened" style="" onclick="cnblogs_code_hide(&#39;5a2ad42a-fa98-453a-8eeb-3e37f5a25107&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_5a2ad42a-fa98-453a-8eeb-3e37f5a25107" class="cnblogs_code_hide" style="display: block;"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> LockSupport {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> Hotspot implementation via intrinsics API</span>
+    <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">final</span><span style="color: #000000;"> sun.misc.Unsafe UNSAFE;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 表示内存偏移地址</span>
+    <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">final</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> parkBlockerOffset;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 表示内存偏移地址</span>
+    <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">final</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> SEED;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 表示内存偏移地址</span>
+    <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">final</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> PROBE;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 表示内存偏移地址</span>
+    <span style="color: #0000ff;">private</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">final</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> SECONDARY;
+    
+    </span><span style="color: #0000ff;">static</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取Unsafe实例</span>
+            UNSAFE =<span style="color: #000000;"> sun.misc.Unsafe.getUnsafe();
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 线程类类型</span>
+            Class&lt;?&gt; tk = Thread.<span style="color: #0000ff;">class</span><span style="color: #000000;">;
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取Thread的parkBlocker字段的内存偏移地址</span>
+            parkBlockerOffset =<span style="color: #000000;"> UNSAFE.objectFieldOffset
+                (tk.getDeclaredField(</span>"parkBlocker"<span style="color: #000000;">));
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取Thread的threadLocalRandomSeed字段的内存偏移地址</span>
+            SEED =<span style="color: #000000;"> UNSAFE.objectFieldOffset
+                (tk.getDeclaredField(</span>"threadLocalRandomSeed"<span style="color: #000000;">));
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取Thread的threadLocalRandomProbe字段的内存偏移地址</span>
+            PROBE =<span style="color: #000000;"> UNSAFE.objectFieldOffset
+                (tk.getDeclaredField(</span>"threadLocalRandomProbe"<span style="color: #000000;">));
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取Thread的threadLocalRandomSecondarySeed字段的内存偏移地址</span>
+            SECONDARY =<span style="color: #000000;"> UNSAFE.objectFieldOffset
+                (tk.getDeclaredField(</span>"threadLocalRandomSecondarySeed"<span style="color: #000000;">));
+        } </span><span style="color: #0000ff;">catch</span> (Exception ex) { <span style="color: #0000ff;">throw</span> <span style="color: #0000ff;">new</span><span style="color: #000000;"> Error(ex); }
+    }
+}</span></pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<span class="cnblogs_code_collapse" style="display: none;">View Code</span></div>
+<p>　　说明：UNSAFE字段表示sun.misc.Unsafe类，查看其源码，<a href="http://www.docjar.com/docs/api/sun/misc/Unsafe.html" target="_blank">点击在这里</a>，一般程序中不允许直接调用，而long型的表示实例对象相应字段在内存中的偏移地址，可以通过该偏移地址获取或者设置该字段的值。</p>
+<p>　　<span style="color: #ff0000;">2.2 类的构造函数　</span></p>
+<div class="cnblogs_code">
+<pre><span style="color: #008000;">//</span><span style="color: #008000;"> 私有构造函数，无法被实例化</span>
+<span style="color: #0000ff;">private</span> LockSupport() {}</pre>
+</div>
+<p>　　说明：LockSupport只有一个私有构造函数，无法被实例化。</p>
+<p>　　<span style="color: #ff0000;">2.3 核心函数分析</span></p>
+<p>　　在分析LockSupport函数之前，先引入sun.misc.Unsafe类中的park和unpark函数，因为LockSupport的核心函数都是基于Unsafe类中定义的park和unpark函数，下面给出两个函数的定义。　　</p>
+<div class="cnblogs_code">
+<pre><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">native</span> <span style="color: #0000ff;">void</span> park(<span style="color: #0000ff;">boolean</span> isAbsolute, <span style="color: #0000ff;">long</span><span style="color: #000000;"> time);
+</span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">native</span> <span style="color: #0000ff;">void</span> unpark(Thread thread);</pre>
+</div>
+<p>　　说明：对两个函数的说明如下</p>
+<p>　　① park函数，阻塞线程，并且该线程在下列情况发生之前都会被阻塞：① 调用unpark函数，释放该线程的许可。② 该线程被中断。③ 设置的时间到了。并且，当time为绝对时间时，isAbsolute为true，否则，isAbsolute为false。当time为0时，表示无限等待，直到unpark发生。</p>
+<p>　　② unpark函数，释放线程的许可，即激活调用park后阻塞的线程。这个函数不是安全的，调用这个函数时要确保线程依旧存活。</p>
+<p>　　<span style="color: #ff9900;">1. park函数　</span></p>
+<p>　　park函数有两个重载版本，方法摘要如下　　</p>
+<div class="cnblogs_code">
+<pre><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> park()；
+</span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> park(Object blocker)；</pre>
+</div>
+<p>　　说明：两个函数的区别在于park()函数没有没有blocker，即没有设置线程的parkBlocker字段。park(Object)型函数如下。</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;1024444d-5fec-43b0-8fcf-99931327cd77&#39;)"><img id="code_img_closed_1024444d-5fec-43b0-8fcf-99931327cd77" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt="" style="display: none;"><img id="code_img_opened_1024444d-5fec-43b0-8fcf-99931327cd77" class="code_img_opened" style="" onclick="cnblogs_code_hide(&#39;1024444d-5fec-43b0-8fcf-99931327cd77&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_1024444d-5fec-43b0-8fcf-99931327cd77" class="cnblogs_code_hide" style="display: block;"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> park(Object blocker) {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取当前线程</span>
+        Thread t =<span style="color: #000000;"> Thread.currentThread();
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 设置Blocker</span>
+<span style="color: #000000;">        setBlocker(t, blocker);
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取许可</span>
+        UNSAFE.park(<span style="color: #0000ff;">false</span>, 0L<span style="color: #000000;">);
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 重新可运行后再此设置Blocker</span>
+        setBlocker(t, <span style="color: #0000ff;">null</span><span style="color: #000000;">);
+    }</span></pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<span class="cnblogs_code_collapse" style="display: none;">View Code</span></div>
+<p>　　说明：调用park函数时，首先获取当前线程，然后设置当前线程的parkBlocker字段，即调用setBlocker函数，之后调用Unsafe类的park函数，之后再调用setBlocker函数。那么问题来了，为什么要在此park函数中要调用两次setBlocker函数呢？原因其实很简单，调用park函数时，当前线程首先设置好parkBlocker字段，然后再调用Unsafe的park函数，此后，当前线程就已经阻塞了，等待该线程的unpark函数被调用，所以后面的一个setBlocker函数无法运行，unpark函数被调用，该线程获得许可后，就可以继续运行了，也就运行第二个setBlocker，把该线程的parkBlocker字段设置为null，这样就完成了整个park函数的逻辑。如果没有第二个setBlocker，那么之后没有调用park(Object blocker)，而直接调用getBlocker函数，得到的还是前一个park(Object blocker)设置的blocker，显然是不符合逻辑的。总之，必须要保证在park(Object blocker)整个函数执行完后，该线程的parkBlocker字段又恢复为null。所以，park(Object)型函数里必须要调用setBlocker函数两次。setBlocker方法如下。　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;2cc4382e-6ccb-4739-a17f-0b598a93ff6a&#39;)"><img id="code_img_closed_2cc4382e-6ccb-4739-a17f-0b598a93ff6a" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt=""><img id="code_img_opened_2cc4382e-6ccb-4739-a17f-0b598a93ff6a" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide(&#39;2cc4382e-6ccb-4739-a17f-0b598a93ff6a&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_2cc4382e-6ccb-4739-a17f-0b598a93ff6a" class="cnblogs_code_hide">
+<pre><span style="color: #0000ff;">private</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> setBlocker(Thread t, Object arg) {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 设置线程t的parkBlocker字段的值为arg</span>
+<span style="color: #000000;">        UNSAFE.putObject(t, parkBlockerOffset, arg);
+    }</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>　　说明：此方法用于设置线程t的parkBlocker字段的值为arg。</p>
+<p>　　另外一个无参重载版本，park()函数如下。　　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;e5ce6a83-3c6a-430a-8f49-815e900f58a1&#39;)"><img id="code_img_closed_e5ce6a83-3c6a-430a-8f49-815e900f58a1" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt=""><img id="code_img_opened_e5ce6a83-3c6a-430a-8f49-815e900f58a1" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide(&#39;e5ce6a83-3c6a-430a-8f49-815e900f58a1&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_e5ce6a83-3c6a-430a-8f49-815e900f58a1" class="cnblogs_code_hide">
+<pre><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> park() {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取许可，设置时间为无限长，直到可以获取许可</span>
+        UNSAFE.park(<span style="color: #0000ff;">false</span>, 0L<span style="color: #000000;">);
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>　　说明：调用了park函数后，会禁用当前线程，除非许可可用。在以下三种情况之一发生之前，当前线程都将处于休眠状态，即下列情况发生时，当前线程会获取许可，可以继续运行。</p>
+<p>　　① 其他某个线程将当前线程作为目标调用 unpark。</p>
+<p>　　② 其他某个线程中断当前线程。</p>
+<p>　　③ 该调用不合逻辑地（即毫无理由地）返回。</p>
+<p>　　<span style="color: #ff9900;">2. parkNanos函数</span></p>
+<p>　　此函数表示在许可可用前禁用当前线程，并最多等待指定的等待时间。具体函数如下。</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;1886480f-9ccd-4a2d-8552-13fe4f2f1b13&#39;)"><img id="code_img_closed_1886480f-9ccd-4a2d-8552-13fe4f2f1b13" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt=""><img id="code_img_opened_1886480f-9ccd-4a2d-8552-13fe4f2f1b13" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide(&#39;1886480f-9ccd-4a2d-8552-13fe4f2f1b13&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_1886480f-9ccd-4a2d-8552-13fe4f2f1b13" class="cnblogs_code_hide">
+<pre><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> parkNanos(Object blocker, <span style="color: #0000ff;">long</span><span style="color: #000000;"> nanos) {
+        </span><span style="color: #0000ff;">if</span> (nanos &gt; 0) { <span style="color: #008000;">//</span><span style="color: #008000;"> 时间大于0
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取当前线程</span>
+            Thread t =<span style="color: #000000;"> Thread.currentThread();
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 设置Blocker</span>
+<span style="color: #000000;">            setBlocker(t, blocker);
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取许可，并设置了时间</span>
+            UNSAFE.park(<span style="color: #0000ff;">false</span><span style="color: #000000;">, nanos);
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 设置许可</span>
+            setBlocker(t, <span style="color: #0000ff;">null</span><span style="color: #000000;">);
+        }
+    }</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>　　说明：该函数也是调用了两次setBlocker函数，nanos参数表示相对时间，表示等待多长时间。</p>
+<p>　　<span style="color: #ff9900;">3. parkUntil函数</span></p>
+<p>　　此函数表示在指定的时限前禁用当前线程，除非许可可用。具体函数如下。　　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;574c5bf4-6bd6-4300-880f-b6d7e408129e&#39;)"><img id="code_img_closed_574c5bf4-6bd6-4300-880f-b6d7e408129e" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt=""><img id="code_img_opened_574c5bf4-6bd6-4300-880f-b6d7e408129e" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide(&#39;574c5bf4-6bd6-4300-880f-b6d7e408129e&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_574c5bf4-6bd6-4300-880f-b6d7e408129e" class="cnblogs_code_hide">
+<pre><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> parkUntil(Object blocker, <span style="color: #0000ff;">long</span><span style="color: #000000;"> deadline) {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取当前线程</span>
+        Thread t =<span style="color: #000000;"> Thread.currentThread();
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 设置Blocker</span>
+<span style="color: #000000;">        setBlocker(t, blocker);
+        UNSAFE.park(</span><span style="color: #0000ff;">true</span><span style="color: #000000;">, deadline);
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 设置Blocker为null</span>
+        setBlocker(t, <span style="color: #0000ff;">null</span><span style="color: #000000;">);
+    }</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>　　说明：该函数也调用了两次setBlocker函数，deadline参数表示绝对时间，表示指定的时间。</p>
+<p>　　<span style="color: #ff9900;">4. unpark函数</span></p>
+<p>　　此函数表示如果给定线程的许可尚不可用，则使其可用。如果线程在 park 上受阻塞，则它将解除其阻塞状态。否则，保证下一次调用 park 不会受阻塞。如果给定线程尚未启动，则无法保证此操作有任何效果。具体函数如下。　　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;9ea75f15-1d35-4244-bd83-ef8641227944&#39;)"><img id="code_img_closed_9ea75f15-1d35-4244-bd83-ef8641227944" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt=""><img id="code_img_opened_9ea75f15-1d35-4244-bd83-ef8641227944" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide(&#39;9ea75f15-1d35-4244-bd83-ef8641227944&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_9ea75f15-1d35-4244-bd83-ef8641227944" class="cnblogs_code_hide">
+<pre><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> unpark(Thread thread) {
+        </span><span style="color: #0000ff;">if</span> (thread != <span style="color: #0000ff;">null</span>) <span style="color: #008000;">//</span><span style="color: #008000;"> 线程为不空</span>
+            UNSAFE.unpark(thread); <span style="color: #008000;">//</span><span style="color: #008000;"> 释放该线程许可</span>
+    }</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>　　说明：释放许可，指定线程可以继续运行。</p>
+<p><strong>三、示例说明</strong></p>
+<p>　　<span style="color: #ff0000;">3.1 实现两线程同步</span></p>
+<p>　　<span style="color: #ff9900;">1. 使用wait/notify实现　</span>　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;13378b4c-ce3f-465e-86e7-552a5b3b44fd&#39;)"><img id="code_img_closed_13378b4c-ce3f-465e-86e7-552a5b3b44fd" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt="" style="display: none;"><img id="code_img_opened_13378b4c-ce3f-465e-86e7-552a5b3b44fd" class="code_img_opened" style="" onclick="cnblogs_code_hide(&#39;13378b4c-ce3f-465e-86e7-552a5b3b44fd&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_13378b4c-ce3f-465e-86e7-552a5b3b44fd" class="cnblogs_code_hide" style="display: block;"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre><span style="color: #0000ff;">package</span><span style="color: #000000;"> com.hust.grid.leesf.locksupport;
+
+</span><span style="color: #0000ff;">class</span> MyThread <span style="color: #0000ff;">extends</span><span style="color: #000000;"> Thread {
+    
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> run() {
+        </span><span style="color: #0000ff;">synchronized</span> (<span style="color: #0000ff;">this</span><span style="color: #000000;">) {
+            System.out.println(</span>"before notify"<span style="color: #000000;">);            
+            notify();
+            System.out.println(</span>"after notify"<span style="color: #000000;">);    
+        }
+    }
+}
+
+</span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> WaitAndNotifyDemo {
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> main(String[] args) <span style="color: #0000ff;">throws</span><span style="color: #000000;"> InterruptedException {
+        MyThread myThread </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> MyThread();            
+        </span><span style="color: #0000ff;">synchronized</span><span style="color: #000000;"> (myThread) {
+            </span><span style="color: #0000ff;">try</span><span style="color: #000000;"> {        
+                myThread.start();
+                </span><span style="color: #008000;">//</span><span style="color: #008000;"> 主线程睡眠3s</span>
+                Thread.sleep(3000<span style="color: #000000;">);
+                System.out.println(</span>"before wait"<span style="color: #000000;">);
+                </span><span style="color: #008000;">//</span><span style="color: #008000;"> 阻塞主线程</span>
+<span style="color: #000000;">                myThread.wait();
+                System.out.println(</span>"after wait"<span style="color: #000000;">);
+            } </span><span style="color: #0000ff;">catch</span><span style="color: #000000;"> (InterruptedException e) {
+                e.printStackTrace();
+            }            
+        }        
+    }
+}</span></pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<span class="cnblogs_code_collapse" style="display: none;">View Code</span></div>
+<p>　　运行结果　</p>
+<div class="cnblogs_code">
+<pre><span style="color: #000000;">before wait
+before notify
+after notify
+after wait</span></pre>
+</div>
+<p>　　说明：具体的流程图如下</p>
+<p>　　<img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/616953-20160402161245348-398996277.png" alt=""></p>
+<p>　　使用wait/notify实现同步时，必须先调用wait，后调用notify，如果先调用notify，再调用wait，将起不了作用。具体代码如下　　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;d3708312-cbe2-4aa8-b79f-c364a0ddd127&#39;)"><img id="code_img_closed_d3708312-cbe2-4aa8-b79f-c364a0ddd127" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt="" style="display: none;"><img id="code_img_opened_d3708312-cbe2-4aa8-b79f-c364a0ddd127" class="code_img_opened" style="" onclick="cnblogs_code_hide(&#39;d3708312-cbe2-4aa8-b79f-c364a0ddd127&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_d3708312-cbe2-4aa8-b79f-c364a0ddd127" class="cnblogs_code_hide" style="display: block;"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre><span style="color: #0000ff;">package</span><span style="color: #000000;"> com.hust.grid.leesf.locksupport;
+
+</span><span style="color: #0000ff;">class</span> MyThread <span style="color: #0000ff;">extends</span><span style="color: #000000;"> Thread {
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> run() {
+        </span><span style="color: #0000ff;">synchronized</span> (<span style="color: #0000ff;">this</span><span style="color: #000000;">) {
+            System.out.println(</span>"before notify"<span style="color: #000000;">);            
+            notify();
+            System.out.println(</span>"after notify"<span style="color: #000000;">);    
+        }
+    }
+}
+
+</span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> WaitAndNotifyDemo {
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> main(String[] args) <span style="color: #0000ff;">throws</span><span style="color: #000000;"> InterruptedException {
+        MyThread myThread </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> MyThread();        
+        myThread.start();
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 主线程睡眠3s</span>
+        Thread.sleep(3000<span style="color: #000000;">);
+        </span><span style="color: #0000ff;">synchronized</span><span style="color: #000000;"> (myThread) {
+            </span><span style="color: #0000ff;">try</span><span style="color: #000000;"> {        
+                System.out.println(</span>"before wait"<span style="color: #000000;">);
+                </span><span style="color: #008000;">//</span><span style="color: #008000;"> 阻塞主线程</span>
+<span style="color: #000000;">                myThread.wait();
+                System.out.println(</span>"after wait"<span style="color: #000000;">);
+            } </span><span style="color: #0000ff;">catch</span><span style="color: #000000;"> (InterruptedException e) {
+                e.printStackTrace();
+            }            
+        }        
+    }
+}</span></pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<span class="cnblogs_code_collapse" style="display: none;">View Code</span></div>
+<p>　　运行结果：　　</p>
+<div class="cnblogs_code">
+<pre><span style="color: #000000;">before notify
+after notify
+before wait</span></pre>
+</div>
+<p>　　说明：由于先调用了notify，再调用的wait，此时主线程还是会一直阻塞。</p>
+<p>　<span style="color: #ff9900;">　3.2 使用park/unpark实现</span>　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;51e1ab0f-3434-4a7a-bde1-b452584c9778&#39;)"><img id="code_img_closed_51e1ab0f-3434-4a7a-bde1-b452584c9778" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt="" style="display: none;"><img id="code_img_opened_51e1ab0f-3434-4a7a-bde1-b452584c9778" class="code_img_opened" style="" onclick="cnblogs_code_hide(&#39;51e1ab0f-3434-4a7a-bde1-b452584c9778&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_51e1ab0f-3434-4a7a-bde1-b452584c9778" class="cnblogs_code_hide" style="display: block;"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre><span style="color: #0000ff;">package</span><span style="color: #000000;"> com.hust.grid.leesf.entry;
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.util.concurrent.locks.LockSupport;
+
+</span><span style="color: #0000ff;">class</span> MyThread <span style="color: #0000ff;">extends</span><span style="color: #000000;"> Thread {
+    </span><span style="color: #0000ff;">private</span><span style="color: #000000;"> Object object;
+
+    </span><span style="color: #0000ff;">public</span><span style="color: #000000;"> MyThread(Object object) {
+        </span><span style="color: #0000ff;">this</span>.object =<span style="color: #000000;"> object;
+    }
+
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> run() {
+        System.out.println(</span>"before unpark"<span style="color: #000000;">);
+        </span><span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+            Thread.sleep(</span>1000<span style="color: #000000;">);
+        } </span><span style="color: #0000ff;">catch</span><span style="color: #000000;"> (InterruptedException e) {
+            e.printStackTrace();
+        }
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取blocker</span>
+        System.out.println("Blocker info " +<span style="color: #000000;"> LockSupport.getBlocker((Thread) object));
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 释放许可</span>
+<span style="color: #000000;">        LockSupport.unpark((Thread) object);
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 休眠500ms，保证先执行park中的setBlocker(t, null);</span>
+        <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+            Thread.sleep(</span>500<span style="color: #000000;">);
+        } </span><span style="color: #0000ff;">catch</span><span style="color: #000000;"> (InterruptedException e) {
+            e.printStackTrace();
+        }
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 再次获取blocker</span>
+        System.out.println("Blocker info " +<span style="color: #000000;"> LockSupport.getBlocker((Thread) object));
+
+        System.out.println(</span>"after unpark"<span style="color: #000000;">);
+    }
+}
+
+</span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> test {
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> main(String[] args) {
+        MyThread myThread </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> MyThread(Thread.currentThread());
+        myThread.start();
+        System.out.println(</span>"before park"<span style="color: #000000;">);
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取许可</span>
+        LockSupport.park("ParkAndUnparkDemo"<span style="color: #000000;">);
+        System.out.println(</span>"after park"<span style="color: #000000;">);
+    }
+}</span></pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<span class="cnblogs_code_collapse" style="display: none;">View Code</span></div>
+<p>　　运行结果：　　</p>
+<div class="cnblogs_code"><div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div>
+<pre><span style="color: #000000;">before park
+before unpark
+Blocker info ParkAndUnparkDemo
+after park
+Blocker info </span><span style="color: #0000ff;">null</span><span style="color: #000000;">
+after unpark</span></pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a href="javascript:void(0);" onclick="copyCnblogsCode(this)" title="复制代码"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/copycode.gif" alt="复制代码"></a></span></div></div>
+<p>　　说明：本程序先执行park，然后在执行unpark，进行同步，并且在unpark的前后都调用了getBlocker，可以看到两次的结果不一样，并且第二次调用的结果为null，这是因为在调用unpark之后，执行了Lock.park(Object blocker)函数中的setBlocker(t, null)函数，所以第二次调用getBlocker时为null。</p>
+<p>　　上例是先调用park，然后调用unpark，现在修改程序，先调用unpark，然后调用park，看能不能正确同步。具体代码如下　　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;22ca9b29-dbee-458a-bf64-5712d92299a6&#39;)"><img id="code_img_closed_22ca9b29-dbee-458a-bf64-5712d92299a6" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt=""><img id="code_img_opened_22ca9b29-dbee-458a-bf64-5712d92299a6" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide(&#39;22ca9b29-dbee-458a-bf64-5712d92299a6&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_22ca9b29-dbee-458a-bf64-5712d92299a6" class="cnblogs_code_hide">
+<pre><span style="color: #0000ff;">package</span><span style="color: #000000;"> com.hust.grid.leesf.locksupport;
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.util.concurrent.locks.LockSupport;
+
+</span><span style="color: #0000ff;">class</span> MyThread <span style="color: #0000ff;">extends</span><span style="color: #000000;"> Thread {
+    </span><span style="color: #0000ff;">private</span><span style="color: #000000;"> Object object;
+
+    </span><span style="color: #0000ff;">public</span><span style="color: #000000;"> MyThread(Object object) {
+        </span><span style="color: #0000ff;">this</span>.object =<span style="color: #000000;"> object;
+    }
+
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> run() {
+        System.out.println(</span>"before unpark"<span style="color: #000000;">);        
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 释放许可</span>
+<span style="color: #000000;">        LockSupport.unpark((Thread) object);
+        System.out.println(</span>"after unpark"<span style="color: #000000;">);
+    }
+}
+
+</span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> ParkAndUnparkDemo {
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> main(String[] args) {
+        MyThread myThread </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> MyThread(Thread.currentThread());
+        myThread.start();
+        </span><span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 主线程睡眠3s</span>
+            Thread.sleep(3000<span style="color: #000000;">);
+        } </span><span style="color: #0000ff;">catch</span><span style="color: #000000;"> (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println(</span>"before park"<span style="color: #000000;">);
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取许可</span>
+        LockSupport.park("ParkAndUnparkDemo"<span style="color: #000000;">);
+        System.out.println(</span>"after park"<span style="color: #000000;">);
+    }
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>　　运行结果：</p>
+<div class="cnblogs_code">
+<pre><span style="color: #000000;">before unpark
+after unpark
+before park
+after park</span></pre>
+</div>
+<p>　　说明：可以看到，在先调用unpark，再调用park时，仍能够正确实现同步，不会造成由wait/notify调用顺序不当所引起的阻塞。因此park/unpark相比wait/notify更加的灵活。</p>
+<p>　　<span style="color: #ff0000;">2. 中断响应</span></p>
+<p>　　看下面示例　　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show(&#39;ac450f29-4acd-4e89-950a-790747fd0b04&#39;)"><img id="code_img_closed_ac450f29-4acd-4e89-950a-790747fd0b04" class="code_img_closed" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ContractedBlock.gif" alt=""><img id="code_img_opened_ac450f29-4acd-4e89-950a-790747fd0b04" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide(&#39;ac450f29-4acd-4e89-950a-790747fd0b04&#39;,event)" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/ExpandedBlockStart.gif" alt="">
+<div id="cnblogs_code_open_ac450f29-4acd-4e89-950a-790747fd0b04" class="cnblogs_code_hide">
+<pre><span style="color: #0000ff;">package</span><span style="color: #000000;"> com.hust.grid.leesf.locksupport;
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.util.concurrent.locks.LockSupport;
+
+</span><span style="color: #0000ff;">class</span> MyThread <span style="color: #0000ff;">extends</span><span style="color: #000000;"> Thread {
+    </span><span style="color: #0000ff;">private</span><span style="color: #000000;"> Object object;
+
+    </span><span style="color: #0000ff;">public</span><span style="color: #000000;"> MyThread(Object object) {
+        </span><span style="color: #0000ff;">this</span>.object =<span style="color: #000000;"> object;
+    }
+
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> run() {
+        System.out.println(</span>"before interrupt"<span style="color: #000000;">);        
+        </span><span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> 休眠3s</span>
+            Thread.sleep(3000<span style="color: #000000;">);
+        } </span><span style="color: #0000ff;">catch</span><span style="color: #000000;"> (InterruptedException e) {
+            e.printStackTrace();
+        }    
+        Thread thread </span>=<span style="color: #000000;"> (Thread) object;
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 中断线程</span>
+<span style="color: #000000;">        thread.interrupt();
+        System.out.println(</span>"after interrupt"<span style="color: #000000;">);
+    }
+}
+
+</span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> InterruptDemo {
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> main(String[] args) {
+        MyThread myThread </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> MyThread(Thread.currentThread());
+        myThread.start();
+        System.out.println(</span>"before park"<span style="color: #000000;">);
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取许可</span>
+        LockSupport.park("ParkAndUnparkDemo"<span style="color: #000000;">);
+        System.out.println(</span>"after park"<span style="color: #000000;">);
+    }
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>　　运行结果：　</p>
+<div class="cnblogs_code">
+<pre><span style="color: #000000;">before park<br>before interrupt<br>after interrupt<br>after park</span><span style="color: #000000;"><br></span></pre>
+</div>
+<p>　　说明：可以看到，在主线程调用park阻塞后，在myThread线程中发出了中断信号，此时主线程会继续运行，也就是说明此时interrupt起到的作用与unpark一样。</p>
+<p><strong>四、总结</strong></p>
+<p>　　LockSupport用来创建锁和其他同步类的基本线程阻塞原语。简而言之，当调用LockSupport.park时，表示当前线程将会等待，直至获得许可，当调用LockSupport.unpark时，必须把等待获得许可的线程作为参数进行传递，好让此线程继续运行。</p>
+<p>　　经过研究LockSupport源码，对LockSupport的工作机制有了详细的了解，阅读源码受益匪浅，谢谢各位园友观看~</p></div><div id="MySignature" style="display: block;"><div style="margin-top: 100px">         
+<p style="border-width: 2px; border-style: dashed; border-color: #000; font-family: 微软雅黑; color: black; font-size: 11px; padding: 0px 10px 10px 40px">             
+PS:如果您觉得阅读本文对您有帮助，请点一下<b><font color="red">“推荐”</font></b>按钮，您的<b><font color="red">“推荐”</font></b>，将会是我不竭的动力！
+<br>
+作者：<a href="http://www.cnblogs.com/leesf456/" target="_blank"><b>leesf</b></a>&nbsp;&nbsp;&nbsp;&nbsp;<b>掌控之中，才会成功；掌控之外，注定失败。</b>       
+<br>  
+出处：<a href="http://www.cnblogs.com/leesf456/" target="_blank">http://www.cnblogs.com/leesf456/</a> 
+<br>本文版权归作者和博客园共有，欢迎转载，但未经作者同意必须保留此段声明，且在文章页面明显位置给出原文连接，否则保留追究法律责任的权利。 
+<br> 
+<font color="red">如果觉得本文对您有帮助，您可以请我喝杯咖啡!</font>
+<br>
+<img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/weixin.gif" height="350" width="350"> 
+<img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/alipay.gif" height="350" width="350">  
+</p></div></div>
+<div class="clear"></div>
+<div id="blog_post_info_block">
+<div id="BlogPostCategory"></div>
+<div id="EntryTag">标签: <a href="https://www.cnblogs.com/leesf456/tag/Java/">Java</a>, <a href="https://www.cnblogs.com/leesf456/tag/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">源码分析</a>, <a href="https://www.cnblogs.com/leesf456/tag/JUC/">JUC</a></div>
+<div id="blog_post_info"><div id="green_channel">
+        <span style="color:red">谢谢推荐！</span>
+            <a id="green_channel_follow" onclick="follow(&#39;75e00040-f3b3-e311-8d02-90b11c0b17d6&#39;);" href="javascript:void(0);">关注我</a>
+    <a id="green_channel_favorite" onclick="AddToWz(cb_entryId);return false;" href="javascript:void(0);">收藏该文</a>
+    <a id="green_channel_weibo" href="javascript:void(0);" title="分享至新浪微博" onclick="ShareToTsina()"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/icon_weibo_24.png" alt=""></a>
+    <a id="green_channel_wechat" href="javascript:void(0);" title="分享至微信" onclick="shareOnWechat()"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/wechat.png" alt=""></a>
+</div>
+<div id="author_profile">
+    <div id="author_profile_info" class="author_profile_info">
+            <a href="http://home.cnblogs.com/u/leesf456/" target="_blank"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/20160324090549.png" class="author_avatar" alt=""></a>
+        <div id="author_profile_detail" class="author_profile_info">
+            <a href="http://home.cnblogs.com/u/leesf456/">leesf</a><br>
+            <a href="http://home.cnblogs.com/u/leesf456/followees">关注 - 0</a><br>
+            <a href="http://home.cnblogs.com/u/leesf456/followers">粉丝 - 602</a>
+        </div>
+    </div>
+    <div class="clear"></div>
+    <div id="author_profile_honor"></div>
+    <div id="author_profile_follow">
+                <a href="javascript:void(0);" onclick="follow(&#39;75e00040-f3b3-e311-8d02-90b11c0b17d6&#39;);return false;">+加关注</a>
+    </div>
+</div>
+<div id="div_digg">
+    <div class="diggit" onclick="votePost(5347293,&#39;Digg&#39;)">
+        <span class="diggnum" id="digg_count">10</span>
+    </div>
+    <div class="buryit" onclick="votePost(5347293,&#39;Bury&#39;)">
+        <span class="burynum" id="bury_count">0</span>
+    </div>
+    <div class="clear"></div>
+    <div class="diggword" id="digg_tips" style="color: red;">请先<a href="javascript:void(0);" onclick="login()">登录</a></div>
+</div>
+<script type="text/javascript">
+    currentDiggType = 0;
+</script></div>
+<div class="clear"></div>
+<div id="post_next_prev"><a href="https://www.cnblogs.com/leesf456/p/5345493.html" class="p_n_p_prefix">« </a> 上一篇：<a href="https://www.cnblogs.com/leesf456/p/5345493.html" title="发布于2016-04-01 16:53">【目录】集合框架目录</a><br><a href="https://www.cnblogs.com/leesf456/p/5349083.html" class="p_n_p_prefix">» </a> 下一篇：<a href="https://www.cnblogs.com/leesf456/p/5349083.html" title="发布于2016-04-03 08:54">【LeetCode】Counting Bits（338）</a><br></div>
+</div>
+
+
+		</div>
+		<div class="postDesc">posted @ <span id="post-date">2016-04-02 17:03</span> <a href="https://www.cnblogs.com/leesf456/">leesf</a> 阅读(<span id="post_view_count">2095</span>) 评论(<span id="post_comment_count">8</span>)  <a href="https://i.cnblogs.com/EditPosts.aspx?postid=5347293" rel="nofollow">编辑</a> <a href="http://www.cnblogs.com/leesf456/p/5347293.html#" onclick="AddToWz(5347293);return false;">收藏</a></div>
+	</div>
+	<script type="text/javascript">var allowComments=true,cb_blogId=236150,cb_entryId=5347293,cb_blogApp=currentBlogApp,cb_blogUserGuid='75e00040-f3b3-e311-8d02-90b11c0b17d6',cb_entryCreatedDate='2016/4/2 17:03:00';loadViewCount(cb_entryId);var cb_postType=1;var isMarkdown=false;</script>
+	
+</div><!--end: topics 文章、评论容器-->
+</div><a name="!comments"></a><div id="blog-comments-placeholder"><div id="comments_pager_top"></div>
+<br>
+<div class="feedback_area_title">评论列表</div>
+<div class="feedbackNoItems"></div>	
+
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"></span>
+				</div>
+				<a href="http://www.cnblogs.com/leesf456/p/5347293.html#3442288" class="layer">#1楼</a><a name="3442288" id="comment_anchor_3442288"></a>  <span class="comment_date">2016-05-30 19:24</span> <a id="a_comment_author_3442288" href="https://www.cnblogs.com/-wang-cheng/" target="_blank">eversliver</a> <a href="http://msg.cnblogs.com/send/eversliver" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3442288" class="blog_comment_body">请问setBlocker的作用是什么</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3442288,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3442288,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3442288_avatar" style="display:none;">http://pic.cnblogs.com/face/818398/20151004224418.png</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"></span>
+				</div>
+				<a href="http://www.cnblogs.com/leesf456/p/5347293.html#3442453" class="layer">#2楼</a><a name="3442453" id="comment_anchor_3442453"></a>[<span class="louzhu">楼主</span>]  <span class="comment_date">2016-05-31 08:53</span> <a id="a_comment_author_3442453" href="https://www.cnblogs.com/leesf456/" target="_blank">leesf</a> <a href="http://msg.cnblogs.com/send/leesf" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3442453" class="blog_comment_body"><a href="http://www.cnblogs.com/leesf456/p/5347293.html#3442288" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,3442288);">@</a>
+eversliver<br>设置当前线程阻塞的原因，可以方便调试（线程在哪个对象上阻塞了）</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3442453,&#39;Digg&#39;,this)">支持(1)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3442453,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3442453_avatar" style="display:none;">http://pic.cnblogs.com/face/616953/20160324090549.png</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"></span>
+				</div>
+				<a href="http://www.cnblogs.com/leesf456/p/5347293.html#3443123" class="layer">#3楼</a><a name="3443123" id="comment_anchor_3443123"></a>  <span class="comment_date">2016-05-31 21:21</span> <a id="a_comment_author_3443123" href="https://www.cnblogs.com/-wang-cheng/" target="_blank">eversliver</a> <a href="http://msg.cnblogs.com/send/eversliver" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3443123" class="blog_comment_body"><a href="http://www.cnblogs.com/leesf456/p/5347293.html#3442453" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,3442453);">@</a>
+leesf<br>理解了 谢谢</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3443123,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3443123,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3443123_avatar" style="display:none;">http://pic.cnblogs.com/face/818398/20151004224418.png</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"></span>
+				</div>
+				<a href="http://www.cnblogs.com/leesf456/p/5347293.html#3443124" class="layer">#4楼</a><a name="3443124" id="comment_anchor_3443124"></a>[<span class="louzhu">楼主</span>]  <span class="comment_date">2016-05-31 21:22</span> <a id="a_comment_author_3443124" href="https://www.cnblogs.com/leesf456/" target="_blank">leesf</a> <a href="http://msg.cnblogs.com/send/leesf" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3443124" class="blog_comment_body"><a href="http://www.cnblogs.com/leesf456/p/5347293.html#3443123" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,3443123);">@</a>
+eversliver<br>不客气，一起学习，多谢支持~</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3443124,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3443124,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3443124_avatar" style="display:none;">http://pic.cnblogs.com/face/616953/20160324090549.png</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"></span>
+				</div>
+				<a href="http://www.cnblogs.com/leesf456/p/5347293.html#3739995" class="layer">#5楼</a><a name="3739995" id="comment_anchor_3739995"></a>  <span class="comment_date">2017-07-20 18:03</span> <a id="a_comment_author_3739995" href="https://www.cnblogs.com/no-sleep/" target="_blank">多年不睡觉</a> <a href="http://msg.cnblogs.com/send/%E5%A4%9A%E5%B9%B4%E4%B8%8D%E7%9D%A1%E8%A7%89" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3739995" class="blog_comment_body">你好，我调用例子的时候在unpark后，当前线程会继续执行。不会立即执行被唤醒的线程。被唤醒的线程是不是也需要等待cpu调度？</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3739995,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3739995,&#39;Bury&#39;,this)">反对(0)</a></div>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"></span>
+				</div>
+				<a href="http://www.cnblogs.com/leesf456/p/5347293.html#3740149" class="layer">#6楼</a><a name="3740149" id="comment_anchor_3740149"></a>[<span class="louzhu">楼主</span>]  <span class="comment_date">2017-07-20 23:23</span> <a id="a_comment_author_3740149" href="https://www.cnblogs.com/leesf456/" target="_blank">leesf</a> <a href="http://msg.cnblogs.com/send/leesf" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3740149" class="blog_comment_body"><a href="http://www.cnblogs.com/leesf456/p/5347293.html#3739995" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,3739995);">@</a>
+多年不睡觉<br>是的</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3740149,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3740149,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3740149_avatar" style="display:none;">http://pic.cnblogs.com/face/616953/20160324090549.png</span>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"></span>
+				</div>
+				<a href="http://www.cnblogs.com/leesf456/p/5347293.html#3817253" class="layer">#7楼</a><a name="3817253" id="comment_anchor_3817253"></a>  <span class="comment_date">2017-10-21 07:31</span> <a id="a_comment_author_3817253" href="http://home.cnblogs.com/u/1257573/" target="_blank">kaka_dai</a> <a href="http://msg.cnblogs.com/send/kaka_dai" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3817253" class="blog_comment_body">楼主，第3个例子，也就是第1个park/unpark例子，运行的结果和你的不一样<br>1)再次调用getBlocker没有得出null<br>2)我执行的结果子线程执行完后再回到主线程<br><br>能帮忙解答一下吗？谢谢了。<br><br>另你的文章很不错，写的很有深度。<br><br><br>before park<br>before unpark<br>Blocker info ParkAndUnparkDemo<br>Blocker info ParkAndUnparkDemo<br>after unpark<br>after park</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3817253,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3817253,&#39;Bury&#39;,this)">反对(0)</a></div>
+			</div>
+		</div>
+	
+		<div class="feedbackItem">
+			<div class="feedbackListSubtitle">
+				<div class="feedbackManage">
+					&nbsp;&nbsp;<span class="comment_actions"></span>
+				</div>
+				<a href="http://www.cnblogs.com/leesf456/p/5347293.html#3817902" class="layer">#8楼</a><a name="3817902" id="comment_anchor_3817902"></a>[<span class="louzhu">楼主</span>]<span id="comment-maxId" style="display:none;">3817902</span><span id="comment-maxDate" style="display:none;">2017/10/22 12:59:30</span>  <span class="comment_date">2017-10-22 12:59</span> <a id="a_comment_author_3817902" href="https://www.cnblogs.com/leesf456/" target="_blank">leesf</a> <a href="http://msg.cnblogs.com/send/leesf" title="发送站内短消息" class="sendMsg2This">&nbsp;</a>
+			</div>
+			<div class="feedbackCon">
+				<div id="comment_body_3817902" class="blog_comment_body"><a href="http://www.cnblogs.com/leesf456/p/5347293.html#3817253" title="查看所回复的评论" onclick="commentManager.renderComments(0,50,3817253);">@</a>
+kaka_dai<br>您好，这是由于在子线程第二次调用LockSupport.getBlocker是在LockSupport.park函数中setBlock(t,null)之前执行的，可以在第二次调用LockSupport.getBlocker之前休眠500ms，让LockSupport中的setBlock(t, null)先执行(大概率)，然后就可得到null的结果了。</div><div class="comment_vote"><a href="javascript:void(0);" class="comment_digg" onclick="return voteComment(3817902,&#39;Digg&#39;,this)">支持(0)</a><a href="javascript:void(0);" class="comment_bury" onclick="return voteComment(3817902,&#39;Bury&#39;,this)">反对(0)</a></div><span id="comment_3817902_avatar" style="display:none;">http://pic.cnblogs.com/face/616953/20160324090549.png</span>
+			</div>
+		</div>
+	<div id="comments_pager_bottom"></div></div><script type="text/javascript">var commentManager = new blogCommentManager();commentManager.renderComments(0);</script>
+<div id="comment_form" class="commentform">
+<a name="commentform"></a>
+<div id="divCommentShow"></div>
+<div id="comment_nav"><span id="span_refresh_tips"></span><a href="javascript:void(0);" onclick="return RefreshCommentList();" id="lnk_RefreshComments" runat="server" clientidmode="Static">刷新评论</a><a href="http://www.cnblogs.com/leesf456/p/5347293.html#" onclick="return RefreshPage();">刷新页面</a><a href="http://www.cnblogs.com/leesf456/p/5347293.html#top">返回顶部</a></div>
+<div id="comment_form_container"><div class="login_tips">注册用户登录后才能发表评论，请 <a rel="nofollow" href="javascript:void(0);" class="underline" onclick="return login(&#39;commentform&#39;);">登录</a> 或 <a rel="nofollow" href="javascript:void(0);" class="underline" onclick="return register();">注册</a>，<a href="http://www.cnblogs.com/">访问</a>网站首页。</div></div>
+<div class="ad_text_commentbox" id="ad_text_under_commentbox"></div>
+<div id="ad_t2" style="display: none;"><a href="http://www.ucancode.com/index.htm" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-工控&#39;)">【推荐】超50万C++/C#源码: 大型实时仿真HMI组态CAD\GIS图形源码！</a><br><a href="https://gitee.com/enterprises?from=bky-2" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-gitee&#39;)">【推荐】专业便捷的企业级代码托管服务 - Gitee 码云</a><br></div>
+<div id="opt_under_post"></div>
+<script async="async" src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/gpt.js"></script>
+<script>
+  var googletag = googletag || {};
+  googletag.cmd = googletag.cmd || [];
+</script>
+<script>
+  googletag.cmd.push(function() {
+        googletag.defineSlot('/1090369/C1', [300, 250], 'div-gpt-ad-1546353474406-0').addService(googletag.pubads());
+        googletag.defineSlot('/1090369/C2', [468, 60], 'div-gpt-ad-1539008685004-0').addService(googletag.pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
+  });
+</script>
+<div id="cnblogs_c1" class="c_ad_block" style="display: none;">
+    <div id="div-gpt-ad-1546353474406-0" style="height: 250px; width: 300px;"><div id="google_ads_iframe_/1090369/C1_0__container__" style="border: 0pt none; width: 300px; height: 250px;"></div></div>
+</div>
+<div id="under_post_news" style="display: none;"><div class="itnews c_ad_block"><b>相关博文：</b><br>·  <a href="https://www.cnblogs.com/leonxyzh/p/7451090.html" target="_blank" onclick="clickRecomItmem(undefined,&#39;undefined&#39;)">【JUC】JDK1.8源码分析之LockSupport（一）</a><br>·  <a href="https://www.cnblogs.com/leesf456/p/5350186.html" target="_blank" onclick="clickRecomItmem(undefined,&#39;undefined&#39;)">【JUC】JDK1.8源码分析之AbstractQueuedSynchronizer（二）</a><br>·  <a href="https://www.cnblogs.com/leesf456/p/5453341.html" target="_blank" onclick="clickRecomItmem(undefined,&#39;undefined&#39;)">【JUC】JDK1.8源码分析之ConcurrentHashMap（一）</a><br>·  <a href="https://www.cnblogs.com/leesf456/p/5585627.html" target="_blank" onclick="clickRecomItmem(undefined,&#39;undefined&#39;)">【JUC】JDK1.8源码分析之ThreadPoolExecutor（一）</a><br>·  <a href="https://www.cnblogs.com/jxkun/p/9375036.html" target="_blank" onclick="clickRecomItmem(undefined,&#39;undefined&#39;)">LockSupport源码分析</a><br></div></div>
+<div id="cnblogs_c2" class="c_ad_block" style="display: none;">
+    <div id="div-gpt-ad-1539008685004-0" style="height: 60px; width: 468px;"><div id="google_ads_iframe_/1090369/C2_0__container__" style="border: 0pt none; width: 468px; height: 60px;"></div></div>
+</div>
+<div id="under_post_kb" style="display: none;"><div class="itnews c_ad_block"><b>最新新闻</b>：<br> ·  <a href="https://news.cnblogs.com/n/620853/" target="_blank">雷军两会提案：推动5G与物联网融合 大力发展商业航天</a><br> ·  <a href="https://news.cnblogs.com/n/620848/" target="_blank">为了发力服务业务，苹果招聘的软件工程师数量已经超过了硬件</a><br> ·  <a href="https://news.cnblogs.com/n/620832/" target="_blank">Model Y是怎样一款车？鹰翼门没了 会有太阳能天窗吗？</a><br> ·  <a href="https://news.cnblogs.com/n/620861/" target="_blank">中本聪闹剧：他们为何冒充中本聪？</a><br> ·  <a href="https://news.cnblogs.com/n/620852/" target="_blank">快手抛出了1000+社招岗位 以研发线为主</a><br>» <a href="http://news.cnblogs.com/" title="IT新闻" target="_blank">更多新闻...</a></div></div>
+<div id="HistoryToday" class="c_ad_block"></div>
+<script type="text/javascript">
+ if(enablePostBottom()) {
+    codeHighlight();
+    fixPostBody();
+    setTimeout(function () { incrementViewCount(cb_entryId); }, 50);
+    deliverT2();
+    deliverC1();
+    deliverC2();    
+    loadNewsAndKb();
+    loadBlogSignature();
+    LoadPostInfoBlock(cb_blogId, cb_entryId, cb_blogApp, cb_blogUserGuid);
+    GetPrevNextPost(cb_entryId, cb_blogId, cb_entryCreatedDate, cb_postType);
+    loadOptUnderPost();
+    GetHistoryToday(cb_blogId, cb_blogApp, cb_entryCreatedDate);  
+}
+</script>
+</div>
+
+    
+	</div><!--end: forFlow -->
+	</div><!--end: mainContent 主体内容容器-->
+
+	<div id="sideBar">
+		<div id="sideBarMain">
+			
+<!--done-->
+<div class="newsItem">
+<h3 class="catListTitle">公告</h3>
+	<div id="blog-news"><div id="div_bloger">
+<!--<img src = "https://files.cnblogs.com/files/leesf456/qrcode_for_gh_84e377314d3c_258.gif" align="middle">-->
+
+
+<p style="text-align:center">爱生活，爱女友，爱运动，爱思考，爱编程</p>
+<p style="text-align:center">相信技术改变世界</p>
+<p style="text-align:center">研读过部分JAVA源码</p>
+<p style="text-align:center">JAVA使用最为熟练；其次SCALA</p>
+<p style="text-align:center">了解并能使用C++、C、JS、HTML</p>
+<p style="text-align:center">做过大数据、WEB、爬虫方面的工作</p>
+<p style="text-align:center">对机器学习、移动端开发有浓厚兴趣</p>
+
+<p style="text-align:center"><font color="BLACK"><strong>欢迎联系:490081539@qq.com</strong></font></p>
+
+
+
+
+<!--<p><font color = "BLACK"><strong>GitHub：</strong></font><a href = "https://github.com/leesf/">https://github.com/leesf/</a></p>-->
+</div>
+
+
+
+
+<!--快速回到顶部-->
+<div id="div_top">
+<a href="http://www.cnblogs.com/leesf456/p/5347293.html#top"><img src="./【JUC】JDK1.8源码分析之LockSupport（一） - leesf - 博客园_files/return_top.gif"></a>
+</div>
+
+<!--屏蔽底部广告-->
+<script type="text/javascript">window['__document_write_ajax_callbacks__']['4']();</script><script type="text/javascript">window['__document_write_ajax_callbacks__']['1']();</script>
+
+<!--设置图标-->
+<script type="text/javascript">window['__document_write_ajax_callbacks__']['5']();</script><script type="text/javascript" language="javascript">window['__document_write_ajax_callbacks__']['2']();</script><div id="profile_block">昵称：<a href="https://home.cnblogs.com/u/leesf456/">leesf</a><br>园龄：<a href="https://home.cnblogs.com/u/leesf456/" title="入园时间：2014-03-25">4年11个月</a><br>粉丝：<a href="https://home.cnblogs.com/u/leesf456/followers/">602</a><br>关注：<a href="https://home.cnblogs.com/u/leesf456/followees/">0</a><div id="p_b_follow"><a href="javascript:void(0);" onclick="follow(&#39;75e00040-f3b3-e311-8d02-90b11c0b17d6&#39;)">+加关注</a></div><script type="text/javascript">window['__document_write_ajax_callbacks__']['6']();</script><script>window['__document_write_ajax_callbacks__']['3']();</script></div></div><script type="text/javascript">loadBlogNews();</script>
+</div>
+
+			<div id="blog-calendar" style=""><table id="blogCalendar" class="Cal" cellspacing="0" cellpadding="0" title="Calendar">
+	<tbody><tr><td colspan="7"><table class="CalTitle" cellspacing="0">
+		<tbody><tr><td class="CalNextPrev"><a href="javascript:void(0);" onclick="loadBlogCalendar(&#39;2019/02/01&#39;);return false;">&lt;</a></td><td align="center">2019年3月</td><td class="CalNextPrev" align="right"><a href="javascript:void(0);" onclick="loadBlogCalendar(&#39;2019/04/01&#39;);return false;">&gt;</a></td></tr>
+	</tbody></table></td></tr><tr><th class="CalDayHeader" align="center" abbr="日" scope="col">日</th><th class="CalDayHeader" align="center" abbr="一" scope="col">一</th><th class="CalDayHeader" align="center" abbr="二" scope="col">二</th><th class="CalDayHeader" align="center" abbr="三" scope="col">三</th><th class="CalDayHeader" align="center" abbr="四" scope="col">四</th><th class="CalDayHeader" align="center" abbr="五" scope="col">五</th><th class="CalDayHeader" align="center" abbr="六" scope="col">六</th></tr><tr><td class="CalOtherMonthDay" align="center">24</td><td class="CalOtherMonthDay" align="center">25</td><td class="CalOtherMonthDay" align="center">26</td><td class="CalOtherMonthDay" align="center">27</td><td class="CalOtherMonthDay" align="center">28</td><td align="center">1</td><td class="CalWeekendDay" align="center">2</td></tr><tr><td class="CalWeekendDay" align="center">3</td><td class="CalTodayDay" align="center">4</td><td align="center">5</td><td align="center">6</td><td align="center">7</td><td align="center">8</td><td class="CalWeekendDay" align="center">9</td></tr><tr><td class="CalWeekendDay" align="center">10</td><td align="center">11</td><td align="center">12</td><td align="center">13</td><td align="center">14</td><td align="center">15</td><td class="CalWeekendDay" align="center">16</td></tr><tr><td class="CalWeekendDay" align="center">17</td><td align="center">18</td><td align="center">19</td><td align="center">20</td><td align="center">21</td><td align="center">22</td><td class="CalWeekendDay" align="center">23</td></tr><tr><td class="CalWeekendDay" align="center">24</td><td align="center">25</td><td align="center">26</td><td align="center">27</td><td align="center">28</td><td align="center">29</td><td class="CalWeekendDay" align="center">30</td></tr><tr><td class="CalWeekendDay" align="center">31</td><td class="CalOtherMonthDay" align="center">1</td><td class="CalOtherMonthDay" align="center">2</td><td class="CalOtherMonthDay" align="center">3</td><td class="CalOtherMonthDay" align="center">4</td><td class="CalOtherMonthDay" align="center">5</td><td class="CalOtherMonthDay" align="center">6</td></tr>
+</tbody></table></div><script type="text/javascript">loadBlogDefaultCalendar();</script>
+			
+			<div id="leftcontentcontainer">
+				<div id="blog-sidecolumn"><div id="sidebar_search" class="sidebar-block"></div><div id="sidebar_categories">
+<div id="sidebar_postarchive" class="catListPostArchive sidebar-block">
+<h3 class="catListTitle">随笔档案<span style="font-size:11px;font-weight:normal">(184)</span></h3>
+
+<ul>
+
+<li><a id="CatList_LinkList_0_Link_0" href="https://www.cnblogs.com/leesf456/archive/2018/03.html">2018年3月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_1" href="https://www.cnblogs.com/leesf456/archive/2018/01.html">2018年1月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_2" href="https://www.cnblogs.com/leesf456/archive/2017/12.html">2017年12月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_3" href="https://www.cnblogs.com/leesf456/archive/2017/11.html">2017年11月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_4" href="https://www.cnblogs.com/leesf456/archive/2017/10.html">2017年10月 (7)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_5" href="https://www.cnblogs.com/leesf456/archive/2017/09.html">2017年9月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_6" href="https://www.cnblogs.com/leesf456/archive/2017/08.html">2017年8月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_7" href="https://www.cnblogs.com/leesf456/archive/2017/07.html">2017年7月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_8" href="https://www.cnblogs.com/leesf456/archive/2017/06.html">2017年6月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_9" href="https://www.cnblogs.com/leesf456/archive/2017/05.html">2017年5月 (11)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_10" href="https://www.cnblogs.com/leesf456/archive/2017/04.html">2017年4月 (5)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_11" href="https://www.cnblogs.com/leesf456/archive/2017/03.html">2017年3月 (12)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_12" href="https://www.cnblogs.com/leesf456/archive/2017/02.html">2017年2月 (6)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_13" href="https://www.cnblogs.com/leesf456/archive/2017/01.html">2017年1月 (10)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_14" href="https://www.cnblogs.com/leesf456/archive/2016/12.html">2016年12月 (6)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_15" href="https://www.cnblogs.com/leesf456/archive/2016/11.html">2016年11月 (12)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_16" href="https://www.cnblogs.com/leesf456/archive/2016/10.html">2016年10月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_17" href="https://www.cnblogs.com/leesf456/archive/2016/09.html">2016年9月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_18" href="https://www.cnblogs.com/leesf456/archive/2016/08.html">2016年8月 (5)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_19" href="https://www.cnblogs.com/leesf456/archive/2016/06.html">2016年6月 (19)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_20" href="https://www.cnblogs.com/leesf456/archive/2016/05.html">2016年5月 (7)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_21" href="https://www.cnblogs.com/leesf456/archive/2016/04.html">2016年4月 (20)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_22" href="https://www.cnblogs.com/leesf456/archive/2016/03.html">2016年3月 (25)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_23" href="https://www.cnblogs.com/leesf456/archive/2016/02.html">2016年2月 (8)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_24" href="https://www.cnblogs.com/leesf456/archive/2016/01.html">2016年1月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_25" href="https://www.cnblogs.com/leesf456/archive/2015/12.html">2015年12月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_26" href="https://www.cnblogs.com/leesf456/archive/2015/09.html">2015年9月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_27" href="https://www.cnblogs.com/leesf456/archive/2015/08.html">2015年8月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_28" href="https://www.cnblogs.com/leesf456/archive/2015/07.html">2015年7月 (3)</a> </li>
+
+</ul>
+
+</div>
+
+</div><div id="sidebar_scorerank" class="sidebar-block">
+<div class="catListBlogRank">
+<h3 class="catListTitle">积分与排名</h3>
+<ul>
+	<li class="liScore">
+		积分 -	302015
+	</li>
+	<li class="liRank">
+		排名 -	823
+	</li>
+</ul>
+</div>
+
+
+</div><div id="sidebar_topviewedposts" class="sidebar-block"><div id="topview_posts_wrap">
+<div class="catListView">
+<h3 class="catListTitle">阅读排行榜</h3>
+	<div id="TopViewPostsBlock"><ul><li><a href="https://www.cnblogs.com/leesf456/p/6022357.html">1. 【分布式】Zookeeper使用--命令行(41926)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6028416.html">2. 【分布式】Zookeeper使用--Java API(30366)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5317574.html">3. 【字符编码】彻底理解字符编码(19905)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5242233.html">4. 【集合框架】JDK1.8源码分析之HashMap（一）(16489)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6036548.html">5. 【分布式】Zookeeper应用场景(12478)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6107600.html">6. 【分布式】Zookeeper的Leader选举(11555)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5170212.html">7. 【小型系统】简单的刷票系统（突破IP限制进行投票）(10818)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6492626.html">8. 【Scala】Scala之Object(9490)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5626339.html">9. 【操作系统】文件管理（六）(8770)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6063694.html">10. 【分布式】Zookeeper在大型分布式系统中的应用(8242)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/4795507.html">11. 【大数据】Linux下安装Hadoop(2.7.1)详解及WordCount运行(7981)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5308358.html">12. 【集合框架】JDK1.8源码分析之ArrayList（六）(7857)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6012777.html">13. 【分布式】Zookeeper与Paxos(7623)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5413517.html">14. 【操作系统】进程管理（二）(7610)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6091208.html">15. 【分布式】Zookeeper序列化及通信协议(7530)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5350186.html">16. 【JUC】JDK1.8源码分析之AbstractQueuedSynchronizer（二）(7257)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6179118.html">17. 【分布式】Zookeeper数据与存储(7178)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5239508.html">18. 【知识积累】爬虫之网页乱码解决方法(gb2312 -&gt; utf-8)(6493)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6019583.html">19. 【杂文】从实习到校招到工作(6043)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5854461.html">20. 【面试】判断一棵二叉树是否为二叉排序树(6037)</a></li></ul></div>
+</div>
+</div></div><div id="sidebar_topcommentedposts" class="sidebar-block"><div id="topfeedback_posts_wrap">
+<div class="catListFeedback">
+<h3 class="catListTitle">评论排行榜</h3>
+	<div id="TopFeedbackPostsBlock"><ul><li><a href="https://www.cnblogs.com/leesf456/p/6019583.html">1. 【杂文】从实习到校招到工作(45)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5170212.html">2. 【小型系统】简单的刷票系统（突破IP限制进行投票）(27)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5242233.html">3. 【集合框架】JDK1.8源码分析之HashMap（一）(26)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/7629176.html">4. 【生活工具】你能带我回家么，可能明天要下雨了。(24)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6012777.html">5. 【分布式】Zookeeper与Paxos(14)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5350186.html">6. 【JUC】JDK1.8源码分析之AbstractQueuedSynchronizer（二）(12)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6036548.html">7. 【分布式】Zookeeper应用场景(12)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6028416.html">8. 【分布式】Zookeeper使用--Java API(11)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6098255.html">9. 【分布式】Zookeeper客户端(9)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5384566.html">10. 【面试】小东最少需要拉多少票才能让她获胜（京东实习笔试题）(9)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5347293.html">11. 【JUC】JDK1.8源码分析之LockSupport（一）(8)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/4733958.html">12. 【GIT】Github上传本地代码详解(8)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/4942157.html">13. 【大数据】Summingbird（Storm + Hadoop）的demo运行(8)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5055697.html">14. 【JVM】JVM之类加载器(8)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5092397.html">15. 【杂文】2015年度总结(7)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5383609.html">16. 【JUC】JDK1.8源码分析之ReentrantLock（三）(7)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5317574.html">17. 【字符编码】彻底理解字符编码(7)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6824345.html">18. 【Netty】第一个Netty应用(6)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5413517.html">19. 【操作系统】进程管理（二）(6)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5512817.html">20. 【JUC】JDK1.8源码分析之ConcurrentSkipListMap（二）(6)</a></li></ul></div>
+</div>
+</div></div><div id="sidebar_topdiggedposts" class="sidebar-block"><div id="topdigg_posts_wrap">
+<div class="catListView">
+<h3 class="catListTitle">推荐排行榜</h3>
+<div id="TopDiggPostsBlock"><ul><li><a href="https://www.cnblogs.com/leesf456/p/6019583.html">1. 【杂文】从实习到校招到工作(42)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5242233.html">2. 【集合框架】JDK1.8源码分析之HashMap（一）(41)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5317574.html">3. 【字符编码】彻底理解字符编码(38)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6036548.html">4. 【分布式】Zookeeper应用场景(27)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5170212.html">5. 【小型系统】简单的刷票系统（突破IP限制进行投票）(26)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5308358.html">6. 【集合框架】JDK1.8源码分析之ArrayList（六）(23)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5350186.html">7. 【JUC】JDK1.8源码分析之AbstractQueuedSynchronizer（二）(22)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6022357.html">8. 【分布式】Zookeeper使用--命令行(22)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5308843.html">9. 【集合框架】JDK1.8源码分析之LinkedList（七）(20)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6107600.html">10. 【分布式】Zookeeper的Leader选举(17)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6028416.html">11. 【分布式】Zookeeper使用--Java API(15)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/6012777.html">12. 【分布式】Zookeeper与Paxos(15)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5413517.html">13. 【操作系统】进程管理（二）(15)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5585627.html">14. 【JUC】JDK1.8源码分析之ThreadPoolExecutor（一）(15)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5453341.html">15. 【JUC】JDK1.8源码分析之ConcurrentHashMap（一）(15)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5605193.html">16. 【操作系统】处理机调度与死锁（三）(14)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5092397.html">17. 【杂文】2015年度总结(14)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5204694.html">18. 【JVM】JVM系列之JVM体系（一）(14)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5218594.html">19. 【JVM】JVM系列之垃圾回收（二）(12)</a></li><li><a href="https://www.cnblogs.com/leesf456/p/5616041.html">20. 【操作系统】存储器管理（四）(12)</a></li></ul></div>
+</div></div></div></div><script type="text/javascript">loadBlogSideColumn();</script>
+			</div>
+			
+		</div><!--end: sideBarMain -->
+	</div><!--end: sideBar 侧边栏容器 -->
+	<div class="clear"></div>
+	</div><!--end: main -->
+	<div class="clear"></div>
+	<div id="footer">
+		
+<!--done-->
+Copyright ©2019 leesf
+	</div><!--end: footer -->
+</div><!--end: home 自定义的最大容器 -->
+
+
+
+<script type="text/javascript">
+document.getElementById("ad_t2").style.display= "none";
+document.getElementById("cnblogs_c1").style.display= "none";
+document.getElementById("cnblogs_c2").style.display= "none";
+document.getElementById("under_post_news").style.display= "none";
+document.getElementById("under_post_kb").style.display= "none";
+//document.getElementsByClassName("buryit")[0].style.display ="none";
+
+document.getElementById("tbCommentBody").setAttribute("placeholder","亲，看完来点评论吧~");
+</script><script type="text/javascript">
+　　//Setting ico for cnblogs
+　　var linkObject = document.createElement('link');
+　　linkObject.rel = "shortcut icon";
+　　linkObject.href = "https://files.cnblogs.com/files/leesf456/20160324090549.ico";
+　　document.getElementsByTagName("head")[0].appendChild(linkObject);
+</script><script type="text/javascript">getFollowStatus('75e00040-f3b3-e311-8d02-90b11c0b17d6')</script></body><div id="cye-workaround-body" style="position: absolute; left: 0px; top: 0px; z-index: -2147483646; background: none 0px 0px / auto repeat-x scroll padding-box border-box rgb(240, 238, 245); height: 10923px; width: 1200px;"></div><div id="cye-workaround-body-image" style="position: absolute; left: 0px; top: 0px; z-index: -2147483645; background: url(&quot;http://www.cnblogs.com/skins/CodingLife/images/body_bg.png&quot;) 0px 0px / auto repeat-x scroll padding-box border-box rgba(0, 0, 0, 0); height: 10923px; width: 1200px;"></div></html>

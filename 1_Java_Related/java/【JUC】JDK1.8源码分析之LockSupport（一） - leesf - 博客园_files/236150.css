@@ -1,0 +1,39 @@
+/*快速评论*/
+#div_digg {
+  position: fixed;
+  bottom: 10px;
+  right: 20px;
+  padding: 20px;
+  width: 140px;
+  background-color:#FFF;
+  border-style:solid; 
+  border-color:#2690e5;
+}
+/*博主*/
+#div_bloger1 {
+ background: #fff;
+ margin-top:10px;
+ margin-bottom:10px;
+ filter:alpha(opacity:30);
+ //border-style:solid; 
+ //border-color:#2690e5;
+ padding: 10px;
+ //text-align:center;
+}
+
+/*返回顶部*/
+#div_top {
+  position: fixed;
+  bottom: 10px;
+  right: 300px;
+  opacity: 0.4;
+  display: block;
+  text-indent: -9999px;
+  width: 40px;
+  height: 40px;
+}
+
+/*统计信息*/
+#div_visit {
+ margin-bottom:10px;
+}

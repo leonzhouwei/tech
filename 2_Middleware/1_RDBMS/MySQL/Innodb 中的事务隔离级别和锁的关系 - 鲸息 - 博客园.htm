@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<!-- saved from url=(0047)https://www.cnblogs.com/leonxyzh/p/7377259.html -->
+<html lang="zh-cn" class="cye-disabled cye-lm"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="origin">
+    <title>Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园</title>
+<meta property="og:description" content="转自：https://tech.meituan.com/innodb-lock.html 前言: 我们都知道事务的几种性质，数据库为了维护这些性质，尤其是一致性和隔离性，一般使用加锁这种方式。同时数据">
+    <link type="text/css" rel="stylesheet" href="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/blog-common.css">
+<link id="MainCss" type="text/css" rel="stylesheet" href="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/bundle-CodingLife.css">
+<link id="mobile-style" media="only screen and (max-width: 767px)" type="text/css" rel="stylesheet" href="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/bundle-CodingLife-mobile.css">
+    <link title="RSS" type="application/rss+xml" rel="alternate" href="https://www.cnblogs.com/leonxyzh/rss">
+    <link title="RSD" type="application/rsd+xml" rel="EditURI" href="https://www.cnblogs.com/leonxyzh/rsd.xml">
+<link type="application/wlwmanifest+xml" rel="wlwmanifest" href="https://www.cnblogs.com/leonxyzh/wlwmanifest.xml">
+    <script src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/f.txt"></script><script src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/pubads_impl_rendering_2019041601.js"></script><script async="" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/analytics.js"></script><script src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/jquery-2.2.0.min.js"></script><style id="nightModeStyle">
+html.cye-enabled.cye-nm:not(*:-webkit-full-screen) body,
+ html.cye-enabled.cye-nm:not(*:-webkit-full-screen) #cye-workaround-body {-webkit-filter:contrast(91%) brightness(84%) invert(1);}</style><style id="cyebody">html.cye-enabled.cye-lm body{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyediv">html.cye-enabled.cye-lm div{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyetable">html.cye-enabled.cye-lm th{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}html.cye-enabled.cye-lm td{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyetextInput">html.cye-enabled.cye-lm input[type=text]{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}html.cye-enabled.cye-lm textarea{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyeselect">html.cye-enabled.cye-lm select{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyeul">html.cye-enabled.cye-lm ul{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style><style id="cyeChangeByClick">html.cye-enabled.cye-lm .cye-lm-tag,html.cye-enabled.cye-lm.cye-lm-tag{background-color:#cce8cf !important;border-color:rgb(51, 58, 51) !important;background-image:none !important;color:#000000  !important}</style>
+    <script>var currentBlogId=343743;var currentBlogApp='leonxyzh',cb_enable_mathjax=false;var isLogined=true;</script>
+    <script src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/blog-common.js" type="text/javascript"></script>
+<link rel="stylesheet" type="text/css" href="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/default.min.css"><link rel="preload" href="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/f(1).txt" as="script"><script type="text/javascript" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/f(1).txt"></script><script src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/pubads_impl_2019041601.js" async=""></script><link rel="prefetch" href="https://tpc.googlesyndication.com/safeframe/1-0-32/html/container.html"></head><div id="cyeBlackMaskLayer" style="background-color: rgb(19, 19, 19); position: fixed; width: 1980px; height: 1080px; z-index: -2147483648;"></div>
+<body style="">
+<a name="top"></a>
+
+
+<!--done-->
+<div id="home">
+<div id="header">
+	<div id="blogTitle">
+	<a id="lnkBlogLogo" href="https://www.cnblogs.com/leonxyzh/"><img id="blogLogo" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/logo.gif" alt="返回主页"></a>			
+		
+<!--done-->
+<h1><a id="Header1_HeaderTitle" class="headermaintitle" href="https://www.cnblogs.com/leonxyzh/">鲸息</a></h1>
+<h2></h2>
+
+
+
+		
+	</div><!--end: blogTitle 博客的标题和副标题 -->
+	<div id="navigator">
+		
+<ul id="navList">
+<li><a id="blog_nav_sitehome" class="menu" href="https://www.cnblogs.com/">博客园</a></li>
+<li><a id="blog_nav_myhome" class="menu" href="https://www.cnblogs.com/leonxyzh/">首页</a></li>
+<li><a id="blog_nav_newpost" class="menu" rel="nofollow" href="https://i.cnblogs.com/EditPosts.aspx?opt=1">新随笔</a></li>
+<li><a id="blog_nav_contact" class="menu" rel="nofollow" href="https://msg.cnblogs.com/send/%E9%B2%B8%E6%81%AF">联系</a></li>
+<li><a id="blog_nav_rss" class="menu" href="https://www.cnblogs.com/leonxyzh/rss">订阅</a>
+<!--<a id="blog_nav_rss_image" class="aHeaderXML" href="https://www.cnblogs.com/leonxyzh/rss"><img src="//www.cnblogs.com/images/xml.gif" alt="订阅" /></a>--></li>
+<li><a id="blog_nav_admin" class="menu" rel="nofollow" href="https://i.cnblogs.com/">管理</a></li>
+</ul>
+		<div class="blogStats">
+			
+			<div id="blog_stats">
+<span id="stats_post_count">随笔 - 285&nbsp; </span>
+<span id="stats_article_count">文章 - 6&nbsp; </span>
+<span id="stats-comment_count">评论 - 1</span>
+</div>
+			
+		</div><!--end: blogStats -->
+	</div><!--end: navigator 博客导航栏 -->
+</div><!--end: header 头部 -->
+
+<div id="main">
+	<div id="mainContent">
+	<div class="forFlow">
+		
+        <div id="post_detail">
+<!--done-->
+<div id="topics">
+	<div class="post">
+		<h1 class="postTitle">
+			<a id="cb_post_title_url" class="postTitle2" href="https://www.cnblogs.com/leonxyzh/p/7377259.html">Innodb 中的事务隔离级别和锁的关系</a>
+		</h1>
+		<div class="clear"></div>
+		<div class="postBody">
+			<div id="cnblogs_post_body" class="blogpost-body"><p>转自：<a href="https://tech.meituan.com/innodb-lock.html" target="_blank">https://tech.meituan.com/innodb-lock.html</a></p>
+<p>&nbsp;</p>
+<blockquote>
+<p>前言:</p>
+<p>我们都知道事务的几种性质，数据库为了维护这些性质，尤其是一致性和隔离性，一般使用加锁这种方式。同时数据库又是个高并发的应用，同一时间会有大量的并发访问，如果加锁过度，会极大的降低并发处理能力。所以对于加锁的处理，可以说就是数据库对于事务处理的精髓所在。这里通过分析MySQL中InnoDB引擎的加锁机制，来抛砖引玉，让读者更好的理解，在事务处理中数据库到底做了什么。</p>
+</blockquote>
+<p>#一次封锁or两段锁？<br>因为有大量的并发访问，为了预防死锁，一般应用中推荐使用一次封锁法，就是在方法的开始阶段，已经预先知道会用到哪些数据，然后全部锁住，在方法运行之后，再全部解锁。这种方式可以有效的避免循环死锁，但在数据库中却不适用，因为在事务开始阶段，数据库并不知道会用到哪些数据。<br>数据库遵循的是两段锁协议，将事务分成两个阶段，加锁阶段和解锁阶段（所以叫两段锁）</p>
+<ul>
+<li>加锁阶段：在该阶段可以进行加锁操作。在对任何数据进行读操作之前要申请并获得S锁（共享锁，其它事务可以继续加共享锁，但不能加排它锁），在进行写操作之前要申请并获得X锁（排它锁，其它事务不能再获得任何锁）。加锁不成功，则事务进入等待状态，直到加锁成功才继续执行。</li>
+<li>解锁阶段：当事务释放了一个封锁以后，事务进入解锁阶段，在该阶段只能进行解锁操作不能再进行加锁操作。</li>
+
+</ul>
+<table>
+<thead>
+<tr><th>事务</th><th>加锁/解锁处理</th></tr>
+
+</thead>
+<tbody>
+<tr>
+<td>begin；</td>
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td>insert into test .....</td>
+<td>加insert对应的锁</td>
+
+</tr>
+<tr>
+<td>update test set...</td>
+<td>加update对应的锁</td>
+
+</tr>
+<tr>
+<td>delete from test ....</td>
+<td>加delete对应的锁</td>
+
+</tr>
+<tr>
+<td>commit;</td>
+<td>事务提交时，同时释放insert、update、delete对应的锁</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p>这种方式虽然无法避免死锁，但是两段锁协议可以保证事务的并发调度是串行化（串行化很重要，尤其是在数据恢复和备份的时候）的。</p>
+<p>#事务中的加锁方式</p>
+<p>##事务的四种隔离级别<br>在数据库操作中，为了有效保证并发读取数据的正确性，提出的事务隔离级别。我们的数据库锁，也是为了构建这些隔离级别存在的。</p>
+<table>
+<thead>
+<tr><th>隔离级别</th><th>脏读（Dirty Read）</th><th>不可重复读（NonRepeatable Read）</th><th>幻读（Phantom Read）</th></tr>
+
+</thead>
+<tbody>
+<tr>
+<td>未提交读（Read uncommitted）</td>
+<td>可能</td>
+<td>可能</td>
+<td>可能</td>
+
+</tr>
+<tr>
+<td>已提交读（Read committed）</td>
+<td>不可能</td>
+<td>可能</td>
+<td>可能</td>
+
+</tr>
+<tr>
+<td>可重复读（Repeatable read）</td>
+<td>不可能</td>
+<td>不可能</td>
+<td>可能</td>
+
+</tr>
+<tr>
+<td>可串行化（Serializable ）</td>
+<td>不可能</td>
+<td>不可能</td>
+<td>不可能</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<ul>
+<li>未提交读(Read Uncommitted)：允许脏读，也就是可能读取到其他会话中未提交事务修改的数据</li>
+<li>提交读(Read Committed)：只能读取到已经提交的数据。Oracle等多数数据库默认都是该级别 (不重复读)</li>
+<li>可重复读(Repeated Read)：可重复读。在同一个事务内的查询都是事务开始时刻一致的，InnoDB默认级别。在SQL标准中，该隔离级别消除了不可重复读，但是还存在幻象读</li>
+<li>串行读(Serializable)：完全串行化的读，每次读都需要获得表级共享锁，读写相互都会阻塞</li>
+
+</ul>
+<p>Read Uncommitted这种级别，数据库一般都不会用，而且任何操作都不会加锁，这里就不讨论了。</p>
+<p>##MySQL中锁的种类<br>MySQL中锁的种类很多，有常见的表锁和行锁，也有新加入的Metadata Lock等等,表锁是对一整张表加锁，虽然可分为读锁和写锁，但毕竟是锁住整张表，会导致并发能力下降，一般是做ddl处理时使用。</p>
+<p>行锁则是锁住数据行，这种加锁方法比较复杂，但是由于只锁住有限的数据，对于其它数据不加限制，所以并发能力强，MySQL一般都是用行锁来处理并发事务。这里主要讨论的也就是行锁。</p>
+<p>###Read Committed（读取提交内容）<br>在RC级别中，数据的读取都是不加锁的，但是数据的写入、修改和删除是需要加锁的。效果如下</p>
+<pre><code class="sql hljs">MySQL&gt; <span class="hljs-keyword">show</span> <span class="hljs-keyword">create</span> <span class="hljs-keyword">table</span> class_teacher \G\
+<span class="hljs-keyword">Table</span>: class_teacher
+<span class="hljs-keyword">Create</span> <span class="hljs-keyword">Table</span>: <span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`class_teacher`</span> (
+  <span class="hljs-string">`id`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">11</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,
+  <span class="hljs-string">`class_name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">100</span>) <span class="hljs-keyword">COLLATE</span> utf8mb4_unicode_ci <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,
+  <span class="hljs-string">`teacher_id`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">11</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,
+  PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>),
+  <span class="hljs-keyword">KEY</span> <span class="hljs-string">`idx_teacher_id`</span> (<span class="hljs-string">`teacher_id`</span>)
+) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> AUTO_INCREMENT=<span class="hljs-number">5</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8mb4 <span class="hljs-keyword">COLLATE</span>=utf8mb4_unicode_ci
+<span class="hljs-number">1</span> <span class="hljs-keyword">row</span> <span class="hljs-keyword">in</span> <span class="hljs-keyword">set</span> (<span class="hljs-number">0.02</span> sec)
+MySQL&gt; <span class="hljs-keyword">select</span> * <span class="hljs-keyword">from</span> class_teacher;
++<span class="hljs-comment">----+--------------+------------+</span>
+| id | class_name   | teacher_id |
++<span class="hljs-comment">----+--------------+------------+</span>
+|  1 | 初三一班     |          1 |
+|  3 | 初二一班     |          2 |
+|  4 | 初二二班     |          2 |
++<span class="hljs-comment">----+--------------+------------+</span>
+</code></pre>
+<p>由于MySQL的InnoDB默认是使用的RR级别，所以我们先要将该session开启成RC级别，并且设置binlog的模式</p>
+<pre><code class="sql hljs"><span class="operator"><span class="keyword"><span class="hljs-keyword">SET</span> <span class="keyword"><span class="hljs-keyword">session</span> <span class="keyword"><span class="hljs-keyword">transaction</span> <span class="keyword"><span class="hljs-keyword">isolation</span> <span class="keyword"><span class="hljs-keyword">level</span> <span class="keyword"><span class="hljs-keyword">read</span> committed;
+<span class="operator"><span class="keyword"><span class="hljs-keyword">SET</span> <span class="keyword"><span class="hljs-keyword">SESSION</span> binlog_format = <span class="string"><span class="hljs-string">'ROW'</span>;（或者是MIXED）
+</span></span></span></span></span></span></span></span></span></span></span></code></pre>
+<table>
+<thead>
+<tr><th>事务A</th><th>事务B</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>begin;</td>
+<td>begin;</td>
+</tr>
+<tr>
+<td>update class_teacher set class_name='初三二班' where teacher_id=1;</td>
+<td>update class_teacher set class_name='初三三班' where teacher_id=1;</td>
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td>ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction</td>
+</tr>
+<tr>
+<td>commit;</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<p>为了防止并发过程中的修改冲突，事务A中MySQL给teacher_id=1的数据行加锁，并一直不commit（释放锁），那么事务B也就一直拿不到该行锁，wait直到超时。</p>
+<p>这时我们要注意到，teacher_id是有索引的，如果是没有索引的class_name呢？update class_teacher set teacher_id=3 where class_name = '初三一班';<br>那么MySQL会给整张表的所有数据行的加行锁。这里听起来有点不可思议，但是当sql运行的过程中，MySQL并不知道哪些数据行是 class_name = '初三一班'的（没有索引嘛），如果一个条件无法通过索引快速过滤，存储引擎层面就会将所有记录加锁后返回，再由MySQL Server层进行过滤。</p>
+<p>但在实际使用过程当中，MySQL做了一些改进，在MySQL Server过滤条件，发现不满足后，会调用unlock_row方法，把不满足条件的记录释放锁 (违背了二段锁协议的约束)。这样做，保证了最后只会持有满足条件记录上的锁，但是每条记录的加锁操作还是不能省略的。可见即使是MySQL，为了效率也是会违反规范的。（参见《高性能MySQL》中文第三版p181）</p>
+<p>这种情况同样适用于MySQL的默认隔离级别RR。所以对一个数据量很大的表做批量修改的时候，如果无法使用相应的索引，MySQL Server过滤数据的的时候特别慢，就会出现虽然没有修改某些行的数据，但是它们还是被锁住了的现象。</p>
+<p>###Repeatable Read（可重读）<br>这是MySQL中InnoDB默认的隔离级别。我们姑且分“读”和“写”两个模块来讲解。</p>
+<p>####读<br>读就是可重读，可重读这个概念是一事务的多个实例在并发读取数据时，会看到同样的数据行，有点抽象，我们来看一下效果。</p>
+<p>RC（不可重读）模式下的展现</p>
+<table>
+<tbody>
+<tr><th>事务A</th><th>事务B</th></tr>
+<tr>
+<td>begin;</td>
+<td>
+<p>begin;</p>
+
+</td>
+
+</tr>
+<tr>
+<td>
+<p>select id,class_name,teacher_id from class_teacher where teacher_id=1;</p>
+<table>
+<tbody>
+<tr><th>id</th><th>class_name</th><th colspan="1">teacher_id</th></tr>
+<tr>
+<td>1</td>
+<td>初三二班</td>
+<td colspan="1">1</td>
+
+</tr>
+<tr>
+<td>2</td>
+<td>初三一班</td>
+<td colspan="1">1</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</td>
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td>
+<p>update class_teacher set class_name='初三三班' where id=1;</p>
+
+</td>
+
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td>commit;</td>
+
+</tr>
+<tr>
+<td colspan="1">
+<p>select id,class_name,teacher_id from class_teacher where teacher_id=1;</p>
+<table>
+<tbody>
+<tr><th>id</th><th>class_name</th><th>teacher_id</th></tr>
+<tr>
+<td>1</td>
+<td>初三三班</td>
+<td>1</td>
+
+</tr>
+<tr>
+<td>2</td>
+<td>初三一班</td>
+<td>1</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p>&nbsp;</p>
+<p>读到了事务B修改的数据，和第一次查询的结果不一样，是不可重读的。</p>
+
+</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+<tr>
+<td colspan="1">commit;</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p><br>事务B修改id=1的数据提交之后，事务A同样的查询，后一次和前一次的结果不一样，这就是不可重读（重新读取产生的结果不一样）。这就很可能带来一些问题，那么我们来看看在RR级别中MySQL的表现：</p>
+<p>&nbsp;</p>
+<table>
+<tbody>
+<tr><th>事务A</th><th>事务B</th><th colspan="1">事务C</th></tr>
+<tr>
+<td>begin;</td>
+<td>
+<p>begin;</p>
+
+</td>
+<td colspan="1">
+<p>begin;</p>
+
+</td>
+
+</tr>
+<tr>
+<td>
+<p>select id,class_name,teacher_id from class_teacher where&nbsp;teacher_id=1;</p>
+<table>
+<tbody>
+<tr><th>id</th><th>class_name</th><th>teacher_id</th></tr>
+<tr>
+<td>1</td>
+<td>初三二班</td>
+<td>1</td>
+
+</tr>
+<tr>
+<td>2</td>
+<td>初三一班</td>
+<td>1</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</td>
+<td>&nbsp;</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td>
+<p>update class_teacher set class_name='初三三班' where id=1;</p>
+
+commit;
+<p>&nbsp;</p>
+
+</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="1">insert into class_teacher values (null,'初三三班',1);
+<p>&nbsp;</p>
+
+commit;</td>
+
+</tr>
+<tr>
+<td colspan="1">
+<p>select id,class_name,teacher_id from class_teacher where&nbsp;teacher_id=1;</p>
+<table>
+<tbody>
+<tr><th>id</th><th>class_name</th><th>teacher_id</th></tr>
+<tr>
+<td>1</td>
+<td>初三二班</td>
+<td>1</td>
+
+</tr>
+<tr>
+<td>2</td>
+<td>初三一班</td>
+<td>1</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p>&nbsp;</p>
+<p>没有读到事务B修改的数据，和第一次sql读取的一样，是可重复读的。</p>
+<p>没有读到事务C新添加的数据。</p>
+
+</td>
+<td colspan="1">&nbsp;</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+<tr>
+<td colspan="1">commit;</td>
+<td colspan="1">&nbsp;</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p>我们注意到，当teacher_id=1时，事务A先做了一次读取，事务B中间修改了id=1的数据，并commit之后，事务A第二次读到的数据和第一次完全相同。所以说它是可重读的。那么MySQL是怎么做到的呢？这里姑且卖个关子，我们往下看。</p>
+<p>####不可重复读和幻读的区别####<br>很多人容易搞混不可重复读和幻读，确实这两者有些相似。但不可重复读重点在于update和delete，而幻读的重点在于insert。</p>
+<p>如果使用锁机制来实现这两种隔离级别，在可重复读中，该sql第一次读取到数据后，就将这些数据加锁，其它事务无法修改这些数据，就可以实现可重复读了。但这种方法却无法锁住insert的数据，所以当事务A先前读取了数据，或者修改了全部数据，事务B还是可以insert数据提交，这时事务A就会发现莫名其妙多了一条之前没有的数据，这就是幻读，不能通过行锁来避免。需要Serializable隔离级别 ，读用读锁，写用写锁，读锁和写锁互斥，这么做可以有效的避免幻读、不可重复读、脏读等问题，但会极大的降低数据库的并发能力。</p>
+<p>所以说不可重复读和幻读最大的区别，就在于如何通过锁机制来解决他们产生的问题。</p>
+<p>上文说的，是使用悲观锁机制来处理这两种问题，但是MySQL、ORACLE、PostgreSQL等成熟的数据库，出于性能考虑，都是使用了以乐观锁为理论基础的MVCC（多版本并发控制）来避免这两种问题。</p>
+<p>####悲观锁和乐观锁####</p>
+<ul>
+<li>悲观锁</li>
+
+</ul>
+<p>正如其名，它指的是对数据被外界（包括本系统当前的其他事务，以及来自外部系统的事务处理）修改持保守态度，因此，在整个数据处理过程中，将数据处于锁定状态。悲观锁的实现，往往依靠数据库提供的锁机制（也只有数据库层提供的锁机制才能真正保证数据访问的排他性，否则，即使在本系统中实现了加锁机制，也无法保证外部系统不会修改数据）。</p>
+<p>在悲观锁的情况下，为了保证事务的隔离性，就需要一致性锁定读。读取数据时给加锁，其它事务无法修改这些数据。修改删除数据时也要加锁，其它事务无法读取这些数据。</p>
+<ul>
+<li>乐观锁</li>
+
+</ul>
+<p>相对悲观锁而言，乐观锁机制采取了更加宽松的加锁机制。悲观锁大多数情况下依靠数据库的锁机制实现，以保证操作最大程度的独占性。但随之而来的就是数据库性能的大量开销，特别是对长事务而言，这样的开销往往无法承受。</p>
+<p>而乐观锁机制在一定程度上解决了这个问题。乐观锁，大多是基于数据版本（ Version ）记录机制实现。何谓数据版本？即为数据增加一个版本标识，在基于数据库表的版本解决方案中，一般是通过为数据库表增加一个 “version” 字段来实现。读取出数据时，将此版本号一同读出，之后更新时，对此版本号加一。此时，将提交数据的版本数据与数据库表对应记录的当前版本信息进行比对，如果提交的数据版本号大于数据库表当前版本号，则予以更新，否则认为是过期数据。</p>
+<p>要说明的是，MVCC的实现没有固定的规范，每个数据库都会有不同的实现方式，这里讨论的是InnoDB的MVCC。</p>
+<p>####MVCC在MySQL的InnoDB中的实现<br>在InnoDB中，会在每行数据后添加两个额外的隐藏的值来实现MVCC，这两个值一个记录这行数据何时被创建，另外一个记录这行数据何时过期（或者被删除）。 在实际操作中，存储的并不是时间，而是事务的版本号，每开启一个新事务，事务的版本号就会递增。 在可重读Repeatable reads事务隔离级别下：</p>
+<ul>
+<li>SELECT时，读取创建版本号&lt;=当前事务版本号，删除版本号为空或&gt;当前事务版本号。</li>
+<li>INSERT时，保存当前事务版本号为行的创建版本号</li>
+<li>DELETE时，保存当前事务版本号为行的删除版本号</li>
+<li>UPDATE时，插入一条新纪录，保存当前事务版本号为行创建版本号，同时保存当前事务版本号到原来删除的行</li>
+
+</ul>
+<p>通过MVCC，虽然每行记录都需要额外的存储空间，更多的行检查工作以及一些额外的维护工作，但可以减少锁的使用，大多数读操作都不用加锁，读数据操作很简单，性能很好，并且也能保证只会读取到符合标准的行，也只锁住必要行。</p>
+<p>我们不管从数据库方面的教课书中学到，还是从网络上看到，大都是上文中事务的四种隔离级别这一模块列出的意思，RR级别是可重复读的，但无法解决幻读，而只有在Serializable级别才能解决幻读。于是我就加了一个事务C来展示效果。在事务C中添加了一条teacher_id=1的数据commit，RR级别中应该会有幻读现象，事务A在查询teacher_id=1的数据时会读到事务C新加的数据。但是测试后发现，在MySQL中是不存在这种情况的，在事务C提交后，事务A还是不会读到这条数据。可见在MySQL的RR级别中，是解决了幻读的读问题的。参见下图</p>
+<p><img src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/1.png" alt="innodb_lock_1"></p>
+<p>读问题解决了，根据MVCC的定义，并发提交数据时会出现冲突，那么冲突时如何解决呢？我们再来看看InnoDB中RR级别对于写数据的处理。</p>
+<p>####“读”与“读”的区别<br>可能有读者会疑惑，事务的隔离级别其实都是对于读数据的定义，但到了这里，就被拆成了读和写两个模块来讲解。这主要是因为MySQL中的读，和事务隔离级别中的读，是不一样的。</p>
+<p>我们且看，在RR级别中，通过MVCC机制，虽然让数据变得可重复读，但我们读到的数据可能是历史数据，是不及时的数据，不是数据库当前的数据！这在一些对于数据的时效特别敏感的业务中，就很可能出问题。</p>
+<p>对于这种读取历史数据的方式，我们叫它快照读 (snapshot read)，而读取数据库当前版本数据的方式，叫当前读 (current read)。很显然，在MVCC中：</p>
+<ul>
+<li>快照读：就是select
+<ul>
+<li>select * from table ....;</li>
+
+</ul>
+
+</li>
+<li>当前读：特殊的读操作，插入/更新/删除操作，属于当前读，处理的都是当前的数据，需要加锁。
+<ul>
+<li>select * from table where ? lock in share mode;</li>
+<li>select * from table where ? for update;</li>
+<li>insert;</li>
+<li>update ;</li>
+<li>delete;</li>
+
+</ul>
+
+</li>
+
+</ul>
+<p>事务的隔离级别实际上都是定义了当前读的级别，MySQL为了减少锁处理（包括等待其它锁）的时间，提升并发能力，引入了快照读的概念，使得select不用加锁。而update、insert这些“当前读”，就需要另外的模块来解决了。</p>
+<p>###写（"当前读"）<br>事务的隔离级别中虽然只定义了读数据的要求，实际上这也可以说是写数据的要求。上文的“读”，实际是讲的快照读；而这里说的“写”就是当前读了。<br>为了解决当前读中的幻读问题，MySQL事务使用了Next-Key锁。</p>
+<p>####Next-Key锁<br>Next-Key锁是行锁和GAP（间隙锁）的合并，行锁上文已经介绍了，接下来说下GAP间隙锁。</p>
+<p>行锁可以防止不同事务版本的数据修改提交时造成数据冲突的情况。但如何避免别的事务插入数据就成了问题。我们可以看看RR级别和RC级别的对比</p>
+<p>RC级别：</p>
+<table>
+<tbody>
+<tr><th>事务A</th><th>事务B</th></tr>
+<tr>
+<td>begin;</td>
+<td>
+<p>begin;</p>
+
+</td>
+
+</tr>
+<tr>
+<td>
+<p>select id,class_name,teacher_id from class_teacher where teacher_id=30;</p>
+<table>
+<tbody>
+<tr><th>id</th><th>class_name</th><th>teacher_id</th></tr>
+<tr>
+<td>2</td>
+<td>初三二班</td>
+<td>30</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p>&nbsp;</p>
+
+</td>
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td>update class_teacher set class_name='初三四班' where teacher_id=30;</td>
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td colspan="1">&nbsp;</td>
+<td colspan="1">
+<p>insert into class_teacher values (null,'初三二班',30);</p>
+<p>commit;</p>
+
+</td>
+
+</tr>
+<tr>
+<td colspan="1">
+<p>select id,class_name,teacher_id from class_teacher where teacher_id=30;</p>
+<table>
+<tbody>
+<tr><th>id</th><th>class_name</th><th>teacher_id</th></tr>
+<tr>
+<td>2</td>
+<td>初三四班</td>
+<td>30</td>
+
+</tr>
+<tr>
+<td>10</td>
+<td>初三二班</td>
+<td>30</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p>&nbsp;</p>
+
+</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p>RR级别：</p>
+<table>
+<tbody>
+<tr><th>事务A</th><th>事务B</th></tr>
+<tr>
+<td>begin;</td>
+<td>
+<p>begin;</p>
+
+</td>
+
+</tr>
+<tr>
+<td>
+<p>select id,class_name,teacher_id from class_teacher where teacher_id=30;</p>
+<table>
+<tbody>
+<tr><th>id</th><th>class_name</th><th>teacher_id</th></tr>
+<tr>
+<td>2</td>
+<td>初三二班</td>
+<td>30</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</td>
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td>update class_teacher set class_name='初三四班' where teacher_id=30;</td>
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td colspan="1">&nbsp;</td>
+<td colspan="1">
+<p>insert into class_teacher values (null,'初三二班',30);</p>
+<p>waiting....</p>
+
+</td>
+
+</tr>
+<tr>
+<td colspan="1">
+<p>select id,class_name,teacher_id from class_teacher where teacher_id=30;</p>
+<table>
+<tbody>
+<tr><th>id</th><th>class_name</th><th>teacher_id</th></tr>
+<tr>
+<td>2</td>
+<td>初三四班</td>
+<td>30</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+<tr>
+<td colspan="1">commit;</td>
+<td colspan="1">事务Acommit后，事务B的insert执行。</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p>通过对比我们可以发现，在RC级别中，事务A修改了所有teacher_id=30的数据，但是当事务Binsert进新数据后，事务A发现莫名其妙多了一行teacher_id=30的数据，而且没有被之前的update语句所修改，这就是“当前读”的幻读。</p>
+<p>RR级别中，事务A在update后加锁，事务B无法插入新数据，这样事务A在update前后读的数据保持一致，避免了幻读。这个锁，就是Gap锁。</p>
+<p>MySQL是这么实现的：</p>
+<p>在class_teacher这张表中，teacher_id是个索引，那么它就会维护一套B+树的数据关系，为了简化，我们用链表结构来表达（实际上是个树形结构，但原理相同）</p>
+<p><img src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/2.png" alt="innodb_lock_2"></p>
+<p>如图所示，InnoDB使用的是聚集索引，teacher_id身为二级索引，就要维护一个索引字段和主键id的树状结构（这里用链表形式表现），并保持顺序排列。</p>
+<p>Innodb将这段数据分成几个个区间</p>
+<ul>
+<li>(negative infinity, 5],</li>
+<li>(5,30],</li>
+<li>(30,positive infinity)；</li>
+
+</ul>
+<p>update class_teacher set class_name='初三四班' where teacher_id=30;不仅用行锁，锁住了相应的数据行；同时也在两边的区间，（5,30]和（30，positive infinity），都加入了gap锁。这样事务B就无法在这个两个区间insert进新数据。</p>
+<p>受限于这种实现方式，Innodb很多时候会锁住不需要锁的区间。如下所示：</p>
+<table>
+<tbody>
+<tr><th>事务A</th><th>事务B</th><th colspan="1">事务C</th></tr>
+<tr>
+<td>begin;</td>
+<td>begin;</td>
+<td colspan="1">begin;</td>
+
+</tr>
+<tr>
+<td>
+<p>select id,class_name,teacher_id from class_teacher;</p>
+<table>
+<tbody>
+<tr><th>id</th><th>class_name</th><th>teacher_id</th></tr>
+<tr>
+<td>1</td>
+<td>初三一班</td>
+<td>
+<p>5</p>
+
+</td>
+
+</tr>
+<tr>
+<td>2</td>
+<td>初三二班</td>
+<td>30</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</td>
+<td>&nbsp;</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+<tr>
+<td>update class_teacher set class_name='初一一班' where teacher_id=20;</td>
+<td>&nbsp;</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td>
+<p>insert into class_teacher values (null,'初三五班',10);</p>
+<p>waiting .....</p>
+
+</td>
+<td colspan="1">insert into class_teacher values (null,'初三五班',40);</td>
+
+</tr>
+<tr>
+<td colspan="1">commit;</td>
+<td colspan="1">事务A commit之后，这条语句才插入成功</td>
+<td colspan="1">commit;</td>
+
+</tr>
+<tr>
+<td colspan="1">&nbsp;</td>
+<td colspan="1">commit;</td>
+<td colspan="1">&nbsp;</td>
+
+</tr>
+
+</tbody>
+
+</table>
+<p>update的teacher_id=20是在(5，30]区间，即使没有修改任何数据，Innodb也会在这个区间加gap锁，而其它区间不会影响，事务C正常插入。</p>
+<p>如果使用的是没有索引的字段，比如update class_teacher set teacher_id=7 where class_name='初三八班（即使没有匹配到任何数据）',那么会给全表加入gap锁。同时，它不能像上文中行锁一样经过MySQL Server过滤自动解除不满足条件的锁，因为没有索引，则这些字段也就没有排序，也就没有区间。除非该事务提交，否则其它事务无法插入任何数据。</p>
+<p>行锁防止别的事务修改或删除，GAP锁防止别的事务新增，行锁和GAP锁结合形成的的Next-Key锁共同解决了RR级别在写数据时的幻读问题。</p>
+<p>###Serializable<br>这个级别很简单，读加共享锁，写加排他锁，读写互斥。使用的悲观锁的理论，实现简单，数据更加安全，但是并发能力非常差。如果你的业务并发的特别少或者没有并发，同时又要求数据及时可靠的话，可以使用这种模式。</p>
+<p>这里要吐槽一句，不要看到select就说不会加锁了，在Serializable这个级别，还是会加锁的！</p>
+<h2 id="-">参考资料</h2>
+<ul>
+<ul>
+<li><a href="http://dev.mysql.com/doc/">MySQL参考手册</a></li>
+<li>《高性能MySQL》第三版</li>
+
+</ul>
+</ul></div><div id="MySignature"></div>
+<div class="clear"></div>
+<div id="blog_post_info_block">
+<div id="BlogPostCategory"></div>
+<div id="EntryTag"></div>
+<div id="blog_post_info"><div id="green_channel">
+        <a href="javascript:void(0);" id="green_channel_digg" onclick="DiggIt(7377259,cb_blogId,1);green_channel_success(this,&#39;谢谢推荐！&#39;);">好文要顶</a>
+            <a id="green_channel_follow" onclick="follow(&#39;fb3f40d5-3810-e711-845c-ac853d9f53ac&#39;);" href="javascript:void(0);">关注我</a>
+    <a id="green_channel_favorite" onclick="AddToWz(cb_entryId);return false;" href="javascript:void(0);">收藏该文</a>
+    <a id="green_channel_weibo" href="javascript:void(0);" title="分享至新浪微博" onclick="ShareToTsina()"><img src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/icon_weibo_24.png" alt=""></a>
+    <a id="green_channel_wechat" href="javascript:void(0);" title="分享至微信" onclick="shareOnWechat()"><img src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/wechat.png" alt=""></a>
+</div>
+<div id="author_profile">
+    <div id="author_profile_info" class="author_profile_info">
+            <a href="http://home.cnblogs.com/u/leonxyzh/" target="_blank"><img src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/20170325150351.png" class="author_avatar" alt=""></a>
+        <div id="author_profile_detail" class="author_profile_info">
+            <a href="http://home.cnblogs.com/u/leonxyzh/">鲸息</a><br>
+            <a href="http://home.cnblogs.com/u/leonxyzh/followees">关注 - 27</a><br>
+            <a href="http://home.cnblogs.com/u/leonxyzh/followers">粉丝 - 2</a>
+        </div>
+    </div>
+    <div class="clear"></div>
+    <div id="author_profile_honor"></div>
+    <div id="author_profile_follow">
+    </div>
+</div>
+<div id="div_digg">
+    <div class="diggit" onclick="votePost(7377259,&#39;Digg&#39;)">
+        <span class="diggnum" id="digg_count">0</span>
+    </div>
+    <div class="buryit" onclick="votePost(7377259,&#39;Bury&#39;)">
+        <span class="burynum" id="bury_count">0</span>
+    </div>
+    <div class="clear"></div>
+    <div class="diggword" id="digg_tips">
+    </div>
+</div>
+<script type="text/javascript">
+    currentDiggType = 0;
+</script></div>
+<div class="clear"></div>
+<div id="post_next_prev"><a href="https://www.cnblogs.com/leonxyzh/p/7377085.html" class="p_n_p_prefix">« </a> 上一篇：<a href="https://www.cnblogs.com/leonxyzh/p/7377085.html" title="发布于2017-08-17 01:44">线上操作与线上问题排查实战</a><br><a href="https://www.cnblogs.com/leonxyzh/p/7399451.html" class="p_n_p_prefix">» </a> 下一篇：<a href="https://www.cnblogs.com/leonxyzh/p/7399451.html" title="发布于2017-08-20 11:54">每天进步一点点——五分钟理解一致性哈希算法(consistent hashing)</a><br></div>
+</div>
+
+
+		</div>
+		<div class="postDesc">posted @ <span id="post-date">2017-08-17 02:10</span> <a href="https://www.cnblogs.com/leonxyzh/">鲸息</a> 阅读(<span id="post_view_count">22</span>) 评论(<span id="post_comment_count">0</span>)  <a href="https://i.cnblogs.com/EditPosts.aspx?postid=7377259" rel="nofollow">编辑</a> <a href="https://www.cnblogs.com/leonxyzh/p/7377259.html#" onclick="AddToWz(7377259);return false;">收藏</a></div>
+	</div>
+	<script type="text/javascript">var allowComments=true,cb_blogId=343743,cb_entryId=7377259,cb_blogApp=currentBlogApp,cb_blogUserGuid='fb3f40d5-3810-e711-845c-ac853d9f53ac',cb_entryCreatedDate='2017/8/17 2:10:00';loadViewCount(cb_entryId);var cb_postType=1;var isMarkdown=false;</script>
+	
+</div><!--end: topics 文章、评论容器-->
+</div><a name="!comments"></a><div id="blog-comments-placeholder"></div><script type="text/javascript">var commentManager = new blogCommentManager();commentManager.renderComments(0);</script>
+<div id="comment_form" class="commentform">
+<a name="commentform"></a>
+<div id="divCommentShow"></div>
+<div id="comment_nav"><span id="span_refresh_tips"></span><a href="javascript:void(0);" onclick="return RefreshCommentList();" id="lnk_RefreshComments" runat="server" clientidmode="Static">刷新评论</a><a href="https://www.cnblogs.com/leonxyzh/p/7377259.html#" onclick="return RefreshPage();">刷新页面</a><a href="https://www.cnblogs.com/leonxyzh/p/7377259.html#top">返回顶部</a></div>
+<div id="comment_form_container"><script type="text/javascript" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/mention.js"></script>
+<div id="commentform_title">发表评论</div>
+<span id="tip_comment" style="color:Red"></span>
+<p>
+昵称：<input type="text" id="tbCommentAuthor" class="author" disabled="disabled" size="50" value="鲸息">
+</p>
+<div class="commentbox_main">
+<div class="commentbox_title">
+<div class="commentbox_title_left">评论内容：</div>
+<div class="commentbox_title_right">
+<img id="ubb_quote" class="comment_icon" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/quote.gif" alt="引用" title="添加引用" onclick="insertUBB(&#39;tbCommentBody&#39;,&#39;quote&#39;)">
+<img id="ubb_bold" class="comment_icon" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/b.png" alt="粗体" title="添加粗体" onclick="insertUBB(&#39;tbCommentBody&#39;,&#39;b&#39;)">
+<img id="ubb_url" class="comment_icon" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/lk.png" alt="链接" title="添加链接" onclick="insertUbbUrl(&#39;tbCommentBody&#39;)">
+<img id="ubb_indent" class="comment_icon" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/indent.png" alt="缩进" title="添加首行缩进" onclick="insertIndent(&#39;tbCommentBody&#39;)">
+<img id="ubb_code" class="comment_icon" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/InsertCode.gif" alt="代码" title="添加代码" onclick="insertUbbCode()">
+<img id="ubb_img" class="comment_icon" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/img.gif" alt="图片" title="上传图片" onclick="OpenImageUploadWindow();">
+</div>
+</div>
+<div class="clear"></div>
+<textarea id="tbCommentBody" class="comment_textarea"></textarea>
+</div>
+<p id="commentbox_opt">
+<input id="btn_comment_submit" type="button" class="comment_btn" value="提交评论">
+<span id="span_comment_canceledit" style="display:none"><a href="javascript:void(0);" onclick="return CancelCommentEdit()">不改了</a></span>
+<a href="javascript:void(0);" onclick="return logout();">退出</a>
+</p>
+<div id="tip_comment2" style="color:Red"></div>
+<p>
+[Ctrl+Enter快捷键提交]
+</p>
+<div style="display:none">
+<span id="comment_edit_id"></span><span id="span_parentcomment_id"></span>
+<span id="span_parent_id"></span>
+<span id="span_comment_replyto"></span>
+<span id="span_comment_posted"></span>
+</div>
+</div>
+<div class="ad_text_commentbox" id="ad_text_under_commentbox"></div>
+<div id="ad_t2"><a href="http://www.ucancode.com/index.htm" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-工控&#39;)">【推荐】超50万C++/C#源码: 大型实时仿真组态图形源码</a><br><a href="https://ke.qq.com/adActivity.html?name=xiangxueketang2" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-享学&#39;)">【培训】IT职业生涯指南，Java程序员薪资翻3倍的秘密</a><br><a href="https://group.cnblogs.com/topic/81213.html" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-咕泡&#39;)">【推荐】工作996，生病ICU，程序员不加班就没前途吗？</a><br><a href="https://gitee.com/enterprises?from=bky-2" target="_blank" onclick="ga(&#39;send&#39;, &#39;event&#39;, &#39;Link&#39;, &#39;click&#39;, &#39;T2-gitee&#39;)">【推荐】专业便捷的企业级代码托管服务 - Gitee 码云</a><br></div>
+<div id="opt_under_post"></div>
+<script async="async" src="./Innodb 中的事务隔离级别和锁的关系 - 鲸息 - 博客园_files/gpt.js"></script>
+<script>
+  var googletag = googletag || {};
+  googletag.cmd = googletag.cmd || [];
+</script>
+<script>
+  googletag.cmd.push(function() {
+        googletag.defineSlot('/1090369/C1', [300, 250], 'div-gpt-ad-1546353474406-0').addService(googletag.pubads());
+        googletag.defineSlot('/1090369/C2', [468, 60], 'div-gpt-ad-1539008685004-0').addService(googletag.pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
+  });
+</script>
+<div id="cnblogs_c1" class="c_ad_block" style="">
+    <div id="div-gpt-ad-1546353474406-0" style="height: 250px; width: 300px;"><div id="google_ads_iframe_/1090369/C1_0__container__" style="border: 0pt none; width: 300px; height: 250px;"></div></div>
+</div>
+<div id="under_post_news"><div class="itnews c_ad_block"><b>相关博文：</b><br>·  <a href="https://www.cnblogs.com/phpfans/p/4319972.html" target="_blank" onclick="clickRecomItmem(4319972)">innodb事务隔离级别</a><br>·  <a href="https://www.cnblogs.com/NoRoad/archive/2010/10/21/1857238.html" target="_blank" onclick="clickRecomItmem(1857238)">事务隔离级别和锁</a><br>·  <a href="https://www.cnblogs.com/flythinking/p/8514133.html" target="_blank" onclick="clickRecomItmem(8514133)">MySQL/InnoDB中的事务隔离级别</a><br>·  <a href="https://www.cnblogs.com/johnson108178/p/9287101.html" target="_blank" onclick="clickRecomItmem(9287101)">高性能MySQL--innodb中事务的隔离级别与锁的关系</a><br>·  <a href="https://www.cnblogs.com/jkko123/p/10181870.html" target="_blank" onclick="clickRecomItmem(10181870)">mysql的事务，隔离级别和锁</a><br></div></div>
+<div id="cnblogs_c2" class="c_ad_block" style="">
+    <div id="div-gpt-ad-1539008685004-0" style="height: 60px; width: 468px;"><div id="google_ads_iframe_/1090369/C2_0__container__" style="border: 0pt none; width: 468px; height: 60px;"></div></div>
+</div>
+<div id="under_post_kb"><div class="itnews c_ad_block"><b>最新新闻</b>：<br> ·  <a href="https://news.cnblogs.com/n/624183/" target="_blank">电动自行车充电服务运营商「小绿人科技」完成亿元B轮融资，即将启动本地化服务</a><br> ·  <a href="https://news.cnblogs.com/n/624182/" target="_blank">一周三休？ 日本微软对员工作息制度进行探索</a><br> ·  <a href="https://news.cnblogs.com/n/624181/" target="_blank">中科大潘建伟团队刷新量子多体纠缠态纪录</a><br> ·  <a href="https://news.cnblogs.com/n/624180/" target="_blank">AI 的主打歌：程序员打得作曲家神不守舍</a><br> ·  <a href="https://news.cnblogs.com/n/624179/" target="_blank">最前线丨滴滴首次对外公布网约车平均抽成19%，新业务导致亏损压力变大</a><br>» <a href="http://news.cnblogs.com/" title="IT新闻" target="_blank">更多新闻...</a></div></div>
+<div id="HistoryToday" class="c_ad_block"></div>
+<script type="text/javascript">
+ if(enablePostBottom()) {
+    codeHighlight();
+    fixPostBody();
+    setTimeout(function () { incrementViewCount(cb_entryId); }, 50);
+    deliverT2();
+    deliverC1();
+    deliverC2();    
+    loadNewsAndKb();
+    loadBlogSignature();
+    LoadPostInfoBlock(cb_blogId, cb_entryId, cb_blogApp, cb_blogUserGuid);
+    GetPrevNextPost(cb_entryId, cb_blogId, cb_entryCreatedDate, cb_postType);
+    loadOptUnderPost();
+    GetHistoryToday(cb_blogId, cb_blogApp, cb_entryCreatedDate);  
+}
+</script>
+</div>
+
+    
+	</div><!--end: forFlow -->
+	</div><!--end: mainContent 主体内容容器-->
+
+	<div id="sideBar">
+		<div id="sideBarMain">
+			
+<!--done-->
+<div class="newsItem">
+<h3 class="catListTitle">公告</h3>
+	<div id="blog-news"><div id="profile_block">昵称：<a href="https://home.cnblogs.com/u/leonxyzh/">鲸息</a><br>园龄：<a href="https://home.cnblogs.com/u/leonxyzh/" title="入园时间：2017-03-24">2年</a><br>粉丝：<a href="https://home.cnblogs.com/u/leonxyzh/followers/">2</a><br>关注：<a href="https://home.cnblogs.com/u/leonxyzh/followees/">27</a><div id="p_b_follow"></div><script>getFollowStatus('fb3f40d5-3810-e711-845c-ac853d9f53ac')</script></div></div><script type="text/javascript">loadBlogNews();</script>
+</div>
+
+			<div id="blog-calendar" style=""><table id="blogCalendar" class="Cal" cellspacing="0" cellpadding="0" title="Calendar">
+	<tbody><tr><td colspan="7"><table class="CalTitle" cellspacing="0">
+		<tbody><tr><td class="CalNextPrev"><a href="javascript:void(0);" onclick="loadBlogCalendar(&#39;2019/03/01&#39;);return false;">&lt;</a></td><td align="center">2019年4月</td><td class="CalNextPrev" align="right"><a href="javascript:void(0);" onclick="loadBlogCalendar(&#39;2019/05/01&#39;);return false;">&gt;</a></td></tr>
+	</tbody></table></td></tr><tr><th class="CalDayHeader" align="center" abbr="日" scope="col">日</th><th class="CalDayHeader" align="center" abbr="一" scope="col">一</th><th class="CalDayHeader" align="center" abbr="二" scope="col">二</th><th class="CalDayHeader" align="center" abbr="三" scope="col">三</th><th class="CalDayHeader" align="center" abbr="四" scope="col">四</th><th class="CalDayHeader" align="center" abbr="五" scope="col">五</th><th class="CalDayHeader" align="center" abbr="六" scope="col">六</th></tr><tr><td class="CalOtherMonthDay" align="center">31</td><td align="center">1</td><td align="center">2</td><td align="center">3</td><td align="center">4</td><td align="center">5</td><td class="CalWeekendDay" align="center">6</td></tr><tr><td class="CalWeekendDay" align="center">7</td><td align="center">8</td><td align="center">9</td><td align="center">10</td><td align="center">11</td><td align="center">12</td><td class="CalWeekendDay" align="center">13</td></tr><tr><td class="CalWeekendDay" align="center">14</td><td align="center">15</td><td align="center">16</td><td align="center">17</td><td align="center">18</td><td align="center">19</td><td class="CalWeekendDay" align="center">20</td></tr><tr><td class="CalWeekendDay" align="center">21</td><td class="CalTodayDay" align="center">22</td><td align="center">23</td><td align="center">24</td><td align="center">25</td><td align="center">26</td><td class="CalWeekendDay" align="center">27</td></tr><tr><td class="CalWeekendDay" align="center">28</td><td align="center">29</td><td align="center">30</td><td class="CalOtherMonthDay" align="center">1</td><td class="CalOtherMonthDay" align="center">2</td><td class="CalOtherMonthDay" align="center">3</td><td class="CalOtherMonthDay" align="center">4</td></tr><tr><td class="CalOtherMonthDay" align="center">5</td><td class="CalOtherMonthDay" align="center">6</td><td class="CalOtherMonthDay" align="center">7</td><td class="CalOtherMonthDay" align="center">8</td><td class="CalOtherMonthDay" align="center">9</td><td class="CalOtherMonthDay" align="center">10</td><td class="CalOtherMonthDay" align="center">11</td></tr>
+</tbody></table></div><script type="text/javascript">loadBlogDefaultCalendar();</script>
+			
+			<div id="leftcontentcontainer">
+				<div id="blog-sidecolumn"><div id="sidebar_search" class="sidebar-block">
+<div id="sidebar_search" class="mySearch">
+<h3 class="catListTitle">搜索</h3>
+<div id="sidebar_search_box">
+<div id="widget_my_zzk" class="div_my_zzk"><input type="text" id="q" onkeydown="return zzk_go_enter(event);" class="input_my_zzk">&nbsp;<input onclick="zzk_go()" type="button" value="找找看" id="btnZzk" class="btn_my_zzk"></div>
+<div id="widget_my_google" class="div_my_zzk"><input type="text" name="google_q" id="google_q" onkeydown="return google_go_enter(event)" class="input_my_zzk">&nbsp;<input onclick="google_go()" type="button" value="谷歌搜索" class="btn_my_zzk"></div>
+</div>
+</div>
+
+</div><div id="sidebar_shortcut" class="sidebar-block">
+<div class="catListLink">
+<h3 class="catListTitle">常用链接</h3>
+<ul>
+<li><a href="https://www.cnblogs.com/leonxyzh/p/" title="我的博客的随笔列表">我的随笔</a></li><li><a href="https://www.cnblogs.com/leonxyzh/MyComments.html" title="我发表过的评论列表">我的评论</a></li><li><a href="https://www.cnblogs.com/leonxyzh/OtherPosts.html" title="我评论过的随笔列表">我的参与</a></li><li><a href="https://www.cnblogs.com/leonxyzh/RecentComments.html" title="我的博客的评论列表">最新评论</a></li><li><a href="https://www.cnblogs.com/leonxyzh/tag/" title="我的博客的标签列表">我的标签</a></li>
+</ul>
+<div id="itemListLin_con" style="display:none;">
+<ul>
+
+</ul>
+</div>
+</div></div><div id="sidebar_toptags" class="sidebar-block"></div><div id="sidebar_categories">
+<div id="sidebar_postcategory" class="catListPostCategory sidebar-block">
+<h3 class="catListTitle">随笔分类</h3>
+
+<ul>
+
+<li><a id="CatList_LinkList_0_Link_0" href="https://www.cnblogs.com/leonxyzh/category/1049440.html">affect the future of humanity(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_1" href="https://www.cnblogs.com/leonxyzh/category/1049367.html">Android(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_2" href="https://www.cnblogs.com/leonxyzh/category/1049425.html">API 设计(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_3" href="https://www.cnblogs.com/leonxyzh/category/1049391.html">Arduino(4)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_4" href="https://www.cnblogs.com/leonxyzh/category/1049410.html">asychronous programming(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_5" href="https://www.cnblogs.com/leonxyzh/category/1049452.html">BPM(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_6" href="https://www.cnblogs.com/leonxyzh/category/1049451.html">BPMN(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_7" href="https://www.cnblogs.com/leonxyzh/category/1049373.html">C(5)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_8" href="https://www.cnblogs.com/leonxyzh/category/1049457.html">cache(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_9" href="https://www.cnblogs.com/leonxyzh/category/1049381.html">CSS(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_10" href="https://www.cnblogs.com/leonxyzh/category/1049466.html">DevOps(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_11" href="https://www.cnblogs.com/leonxyzh/category/1049467.html">DevOps(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_12" href="https://www.cnblogs.com/leonxyzh/category/1049400.html">DNN</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_13" href="https://www.cnblogs.com/leonxyzh/category/1049446.html">Elon Musk(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_14" href="https://www.cnblogs.com/leonxyzh/category/1049412.html">event driven(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_15" href="https://www.cnblogs.com/leonxyzh/category/1049375.html">Git(7)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_16" href="https://www.cnblogs.com/leonxyzh/category/1049430.html">Go</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_17" href="https://www.cnblogs.com/leonxyzh/category/1049418.html">Hibernate(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_18" href="https://www.cnblogs.com/leonxyzh/category/1049405.html">home automation(4)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_19" href="https://www.cnblogs.com/leonxyzh/category/1049476.html">HTML(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_20" href="https://www.cnblogs.com/leonxyzh/category/1049477.html">HTML(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_21" href="https://www.cnblogs.com/leonxyzh/category/1049438.html">Html5</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_22" href="https://www.cnblogs.com/leonxyzh/category/1049442.html">internet(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_23" href="https://www.cnblogs.com/leonxyzh/category/1049379.html">Java(20)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_24" href="https://www.cnblogs.com/leonxyzh/category/1049426.html">JavaFX(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_25" href="https://www.cnblogs.com/leonxyzh/category/1049385.html">JavaScript(5)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_26" href="https://www.cnblogs.com/leonxyzh/category/1049387.html">JUnit(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_27" href="https://www.cnblogs.com/leonxyzh/category/1049371.html">Linux(20)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_28" href="https://www.cnblogs.com/leonxyzh/category/1049382.html">Lisp(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_29" href="https://www.cnblogs.com/leonxyzh/category/1049407.html">Markdown(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_30" href="https://www.cnblogs.com/leonxyzh/category/1049436.html">maven(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_31" href="https://www.cnblogs.com/leonxyzh/category/1049433.html">Message Queue</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_32" href="https://www.cnblogs.com/leonxyzh/category/1049462.html">Micro Service</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_33" href="https://www.cnblogs.com/leonxyzh/category/1049463.html">Micro Service</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_34" href="https://www.cnblogs.com/leonxyzh/category/1049445.html">multi-planetary life(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_35" href="https://www.cnblogs.com/leonxyzh/category/1049413.html">Node.js(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_36" href="https://www.cnblogs.com/leonxyzh/category/1049398.html">NoSQL(5)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_37" href="https://www.cnblogs.com/leonxyzh/category/1049431.html">NoSQL (Not-only SQL)(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_38" href="https://www.cnblogs.com/leonxyzh/category/1049406.html">open source(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_39" href="https://www.cnblogs.com/leonxyzh/category/1049419.html">ORM</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_40" href="https://www.cnblogs.com/leonxyzh/category/1049401.html">REST(9)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_41" href="https://www.cnblogs.com/leonxyzh/category/1049475.html">Shell(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_42" href="https://www.cnblogs.com/leonxyzh/category/1049423.html">Shiro(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_43" href="https://www.cnblogs.com/leonxyzh/category/1049404.html">smart home(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_44" href="https://www.cnblogs.com/leonxyzh/category/1049447.html">SOA(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_45" href="https://www.cnblogs.com/leonxyzh/category/1049459.html">Software Architecture</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_46" href="https://www.cnblogs.com/leonxyzh/category/1049415.html">Spring(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_47" href="https://www.cnblogs.com/leonxyzh/category/1049437.html">SQL(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_48" href="https://www.cnblogs.com/leonxyzh/category/1049417.html">Struts(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_49" href="https://www.cnblogs.com/leonxyzh/category/1049443.html">sustainable energy(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_50" href="https://www.cnblogs.com/leonxyzh/category/1049383.html">TopCoder(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_51" href="https://www.cnblogs.com/leonxyzh/category/1049397.html">UML(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_52" href="https://www.cnblogs.com/leonxyzh/category/1049464.html">Web(7)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_53" href="https://www.cnblogs.com/leonxyzh/category/1049465.html">Web(7)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_54" href="https://www.cnblogs.com/leonxyzh/category/1049450.html">workflow(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_55" href="https://www.cnblogs.com/leonxyzh/category/1049420.html">版本控制(7)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_56" href="https://www.cnblogs.com/leonxyzh/category/1049366.html">编程规范(6)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_57" href="https://www.cnblogs.com/leonxyzh/category/1049393.html">编程语言(4)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_58" href="https://www.cnblogs.com/leonxyzh/category/1049416.html">编辑器(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_59" href="https://www.cnblogs.com/leonxyzh/category/1049395.html">大数据(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_60" href="https://www.cnblogs.com/leonxyzh/category/1049421.html">单元测试(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_61" href="https://www.cnblogs.com/leonxyzh/category/1049482.html">动态追踪</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_62" href="https://www.cnblogs.com/leonxyzh/category/1049483.html">动态追踪</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_63" href="https://www.cnblogs.com/leonxyzh/category/1049428.html">分布式存储(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_64" href="https://www.cnblogs.com/leonxyzh/category/1049427.html">分布式计算(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_65" href="https://www.cnblogs.com/leonxyzh/category/1049472.html">该死</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_66" href="https://www.cnblogs.com/leonxyzh/category/1049473.html">该死</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_67" href="https://www.cnblogs.com/leonxyzh/category/1049449.html">工作流(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_68" href="https://www.cnblogs.com/leonxyzh/category/1049434.html">构建工具(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_69" href="https://www.cnblogs.com/leonxyzh/category/1049441.html">互联网(6)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_70" href="https://www.cnblogs.com/leonxyzh/category/1049456.html">缓存(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_71" href="https://www.cnblogs.com/leonxyzh/category/1049484.html">火焰图</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_72" href="https://www.cnblogs.com/leonxyzh/category/1049485.html">火焰图</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_73" href="https://www.cnblogs.com/leonxyzh/category/1049470.html">机器学习</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_74" href="https://www.cnblogs.com/leonxyzh/category/1049471.html">机器学习</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_75" href="https://www.cnblogs.com/leonxyzh/category/1049402.html">家庭自动化(4)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_76" href="https://www.cnblogs.com/leonxyzh/category/1049376.html">经典电影评论(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_77" href="https://www.cnblogs.com/leonxyzh/category/1049377.html">开发工具(13)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_78" href="https://www.cnblogs.com/leonxyzh/category/1049414.html">开发框架(4)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_79" href="https://www.cnblogs.com/leonxyzh/category/1049468.html">开心一下(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_80" href="https://www.cnblogs.com/leonxyzh/category/1049469.html">开心一下(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_81" href="https://www.cnblogs.com/leonxyzh/category/1049403.html">开源项目(5)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_82" href="https://www.cnblogs.com/leonxyzh/category/1049444.html">可持续能源(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_83" href="https://www.cnblogs.com/leonxyzh/category/1049390.html">酷炫产品(7)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_84" href="https://www.cnblogs.com/leonxyzh/category/1049408.html">面向服务编程(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_85" href="https://www.cnblogs.com/leonxyzh/category/1049448.html">面向服务架构(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_86" href="https://www.cnblogs.com/leonxyzh/category/1049399.html">求知若饥(8)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_87" href="https://www.cnblogs.com/leonxyzh/category/1049386.html">权限控制(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_88" href="https://www.cnblogs.com/leonxyzh/category/1049372.html">日志工具(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_89" href="https://www.cnblogs.com/leonxyzh/category/1049458.html">软件架构(8)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_90" href="https://www.cnblogs.com/leonxyzh/category/1049374.html">设计模式(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_91" href="https://www.cnblogs.com/leonxyzh/category/1049422.html">深度神经网络</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_92" href="https://www.cnblogs.com/leonxyzh/category/1049411.html">事件驱动(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_93" href="https://www.cnblogs.com/leonxyzh/category/1049396.html">树莓派(6)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_94" href="https://www.cnblogs.com/leonxyzh/category/1049370.html">数据库(7)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_95" href="https://www.cnblogs.com/leonxyzh/category/1049474.html">数据挖掘(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_96" href="https://www.cnblogs.com/leonxyzh/category/1049365.html">思考(20)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_97" href="https://www.cnblogs.com/leonxyzh/category/1049380.html">搜索引擎</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_98" href="https://www.cnblogs.com/leonxyzh/category/1049392.html">算法(4)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_99" href="https://www.cnblogs.com/leonxyzh/category/1049424.html">体系结构(7)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_100" href="https://www.cnblogs.com/leonxyzh/category/1049384.html">图形图像软件(3)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_101" href="https://www.cnblogs.com/leonxyzh/category/1049460.html">微服务(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_102" href="https://www.cnblogs.com/leonxyzh/category/1049461.html">微服务(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_103" href="https://www.cnblogs.com/leonxyzh/category/1049394.html">文档写作(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_104" href="https://www.cnblogs.com/leonxyzh/category/1049378.html">我的日志</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_105" href="https://www.cnblogs.com/leonxyzh/category/1049389.html">系统运维(6)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_106" href="https://www.cnblogs.com/leonxyzh/category/1049432.html">消息队列</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_107" href="https://www.cnblogs.com/leonxyzh/category/1049455.html">星际生活(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_108" href="https://www.cnblogs.com/leonxyzh/category/1049369.html">性能相关数据集锦(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_109" href="https://www.cnblogs.com/leonxyzh/category/1049453.html">业务流程管理(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_110" href="https://www.cnblogs.com/leonxyzh/category/1049454.html">业务流程建模与标注(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_111" href="https://www.cnblogs.com/leonxyzh/category/1049435.html">依赖管理工具(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_112" href="https://www.cnblogs.com/leonxyzh/category/1049409.html">异步编程(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_113" href="https://www.cnblogs.com/leonxyzh/category/1049439.html">影响人类的未来(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_114" href="https://www.cnblogs.com/leonxyzh/category/1049368.html">游戏开发(2)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_115" href="https://www.cnblogs.com/leonxyzh/category/1049429.html">云计算(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_116" href="https://www.cnblogs.com/leonxyzh/category/1049388.html">智能家居(6)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_117" href="https://www.cnblogs.com/leonxyzh/category/1049480.html">抓包(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_118" href="https://www.cnblogs.com/leonxyzh/category/1049481.html">抓包(1)</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_119" href="https://www.cnblogs.com/leonxyzh/category/1049478.html">总结</a> </li>
+
+<li><a id="CatList_LinkList_0_Link_120" href="https://www.cnblogs.com/leonxyzh/category/1049479.html">总结</a> </li>
+
+</ul>
+
+</div>
+
+<div id="sidebar_postarchive" class="catListPostArchive sidebar-block">
+<h3 class="catListTitle">随笔档案</h3>
+
+<ul>
+
+<li><a id="CatList_LinkList_1_Link_0" href="https://www.cnblogs.com/leonxyzh/archive/2018/06.html">2018年6月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_1" href="https://www.cnblogs.com/leonxyzh/archive/2018/01.html">2018年1月 (8)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_2" href="https://www.cnblogs.com/leonxyzh/archive/2017/12.html">2017年12月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_3" href="https://www.cnblogs.com/leonxyzh/archive/2017/10.html">2017年10月 (6)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_4" href="https://www.cnblogs.com/leonxyzh/archive/2017/09.html">2017年9月 (9)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_5" href="https://www.cnblogs.com/leonxyzh/archive/2017/08.html">2017年8月 (35)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_6" href="https://www.cnblogs.com/leonxyzh/archive/2017/07.html">2017年7月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_7" href="https://www.cnblogs.com/leonxyzh/archive/2017/06.html">2017年6月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_8" href="https://www.cnblogs.com/leonxyzh/archive/2017/05.html">2017年5月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_9" href="https://www.cnblogs.com/leonxyzh/archive/2017/02.html">2017年2月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_10" href="https://www.cnblogs.com/leonxyzh/archive/2016/06.html">2016年6月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_11" href="https://www.cnblogs.com/leonxyzh/archive/2016/01.html">2016年1月 (5)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_12" href="https://www.cnblogs.com/leonxyzh/archive/2015/12.html">2015年12月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_13" href="https://www.cnblogs.com/leonxyzh/archive/2015/11.html">2015年11月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_14" href="https://www.cnblogs.com/leonxyzh/archive/2015/10.html">2015年10月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_15" href="https://www.cnblogs.com/leonxyzh/archive/2015/09.html">2015年9月 (7)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_16" href="https://www.cnblogs.com/leonxyzh/archive/2015/08.html">2015年8月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_17" href="https://www.cnblogs.com/leonxyzh/archive/2015/07.html">2015年7月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_18" href="https://www.cnblogs.com/leonxyzh/archive/2015/06.html">2015年6月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_19" href="https://www.cnblogs.com/leonxyzh/archive/2015/03.html">2015年3月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_20" href="https://www.cnblogs.com/leonxyzh/archive/2015/02.html">2015年2月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_21" href="https://www.cnblogs.com/leonxyzh/archive/2015/01.html">2015年1月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_22" href="https://www.cnblogs.com/leonxyzh/archive/2014/12.html">2014年12月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_23" href="https://www.cnblogs.com/leonxyzh/archive/2014/11.html">2014年11月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_24" href="https://www.cnblogs.com/leonxyzh/archive/2014/10.html">2014年10月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_25" href="https://www.cnblogs.com/leonxyzh/archive/2014/09.html">2014年9月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_26" href="https://www.cnblogs.com/leonxyzh/archive/2014/08.html">2014年8月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_27" href="https://www.cnblogs.com/leonxyzh/archive/2014/07.html">2014年7月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_28" href="https://www.cnblogs.com/leonxyzh/archive/2014/06.html">2014年6月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_29" href="https://www.cnblogs.com/leonxyzh/archive/2014/05.html">2014年5月 (7)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_30" href="https://www.cnblogs.com/leonxyzh/archive/2014/04.html">2014年4月 (2)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_31" href="https://www.cnblogs.com/leonxyzh/archive/2014/02.html">2014年2月 (9)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_32" href="https://www.cnblogs.com/leonxyzh/archive/2014/01.html">2014年1月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_33" href="https://www.cnblogs.com/leonxyzh/archive/2013/12.html">2013年12月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_34" href="https://www.cnblogs.com/leonxyzh/archive/2013/11.html">2013年11月 (20)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_35" href="https://www.cnblogs.com/leonxyzh/archive/2013/10.html">2013年10月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_36" href="https://www.cnblogs.com/leonxyzh/archive/2013/09.html">2013年9月 (6)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_37" href="https://www.cnblogs.com/leonxyzh/archive/2013/08.html">2013年8月 (10)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_38" href="https://www.cnblogs.com/leonxyzh/archive/2013/07.html">2013年7月 (17)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_39" href="https://www.cnblogs.com/leonxyzh/archive/2013/06.html">2013年6月 (13)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_40" href="https://www.cnblogs.com/leonxyzh/archive/2013/05.html">2013年5月 (4)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_41" href="https://www.cnblogs.com/leonxyzh/archive/2013/04.html">2013年4月 (6)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_42" href="https://www.cnblogs.com/leonxyzh/archive/2013/03.html">2013年3月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_43" href="https://www.cnblogs.com/leonxyzh/archive/2013/02.html">2013年2月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_44" href="https://www.cnblogs.com/leonxyzh/archive/2013/01.html">2013年1月 (8)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_45" href="https://www.cnblogs.com/leonxyzh/archive/2012/12.html">2012年12月 (25)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_46" href="https://www.cnblogs.com/leonxyzh/archive/2012/11.html">2012年11月 (7)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_47" href="https://www.cnblogs.com/leonxyzh/archive/2012/10.html">2012年10月 (10)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_48" href="https://www.cnblogs.com/leonxyzh/archive/2012/09.html">2012年9月 (9)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_49" href="https://www.cnblogs.com/leonxyzh/archive/2012/08.html">2012年8月 (3)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_50" href="https://www.cnblogs.com/leonxyzh/archive/2012/07.html">2012年7月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_51" href="https://www.cnblogs.com/leonxyzh/archive/2012/06.html">2012年6月 (1)</a> </li>
+
+<li><a id="CatList_LinkList_1_Link_52" href="https://www.cnblogs.com/leonxyzh/archive/2012/05.html">2012年5月 (3)</a> </li>
+
+</ul>
+
+</div>
+
+</div><div id="sidebar_recentcomments" class="sidebar-block"><div id="recent_comments_wrap">
+<div class="catListComment">
+<h3 class="catListTitle">最新评论</h3>
+
+	<div id="RecentCommentsBlock"><ul>
+        <li class="recent_comment_title"><a href="https://www.cnblogs.com/leonxyzh/p/7289352.html#4179335">1. Re:记一次获得 3 倍性能的 go 程序优化实践，及 on-cpu / off-cpu 火焰图的使用</a></li>
+        <li class="recent_comment_body">问一下filebeat插件如何开发，有文档么？</li>
+        <li class="recent_comment_author">--龙跃十二</li>
+</ul>
+</div>
+</div>
+</div></div><div id="sidebar_topviewedposts" class="sidebar-block"><div id="topview_posts_wrap">
+<div class="catListView">
+<h3 class="catListTitle">阅读排行榜</h3>
+	<div id="TopViewPostsBlock"><ul><li><a href="https://www.cnblogs.com/leonxyzh/p/8288339.html">1. linux 系统 UDP 丢包问题分析思路(3174)</a></li><li><a href="https://www.cnblogs.com/leonxyzh/p/7289092.html">2. 树莓派搭建 Google TV(2794)</a></li><li><a href="https://www.cnblogs.com/leonxyzh/p/7466027.html">3. 360 基于 Prometheus的在线服务监控实践(2262)</a></li><li><a href="https://www.cnblogs.com/leonxyzh/p/7466019.html">4. Wireshark 如何捕获网络流量数据包(2262)</a></li><li><a href="https://www.cnblogs.com/leonxyzh/p/7446456.html">5. Dubbo 源代码分析八：再说 Provider 线程池被 EXHAUSTED(1830)</a></li></ul></div>
+</div>
+</div></div><div id="sidebar_topcommentedposts" class="sidebar-block"><div id="topfeedback_posts_wrap">
+<div class="catListFeedback">
+<h3 class="catListTitle">评论排行榜</h3>
+	<div id="TopFeedbackPostsBlock"><ul><li><a href="https://www.cnblogs.com/leonxyzh/p/7289352.html">1. 记一次获得 3 倍性能的 go 程序优化实践，及 on-cpu / off-cpu 火焰图的使用(1)</a></li></ul></div>
+</div>
+</div></div><div id="sidebar_topdiggedposts" class="sidebar-block"><div id="topdigg_posts_wrap">
+<div class="catListView">
+<h3 class="catListTitle">推荐排行榜</h3>
+<div id="TopDiggPostsBlock"><ul><li><a href="https://www.cnblogs.com/leonxyzh/p/7289089.html">1. [置顶]
+        献给写作者的 Markdown 新手指南(1)</a></li></ul></div>
+</div></div></div></div><script type="text/javascript">loadBlogSideColumn();</script>
+			</div>
+			
+		</div><!--end: sideBarMain -->
+	</div><!--end: sideBar 侧边栏容器 -->
+	<div class="clear"></div>
+	</div><!--end: main -->
+	<div class="clear"></div>
+	<div id="footer">
+		
+<!--done-->
+Copyright ©2019 鲸息
+	</div><!--end: footer -->
+</div><!--end: home 自定义的最大容器 -->
+
+
+
+</body><div id="cye-workaround-body" style="position: absolute; left: 0px; top: 0px; z-index: -2147483646; background: none 0px 0px / auto repeat-x scroll padding-box border-box rgb(240, 238, 245); height: 12572px; width: 1200px;"></div><div id="cye-workaround-body-image" style="position: absolute; left: 0px; top: 0px; z-index: -2147483645; background: url(&quot;https://www.cnblogs.com/skins/CodingLife/images/body_bg.png&quot;) 0px 0px / auto repeat-x scroll padding-box border-box rgba(0, 0, 0, 0); height: 12572px; width: 1200px;"></div></html>
